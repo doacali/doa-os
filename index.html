@@ -201,6 +201,86 @@
   </main>
 
   <script>
+    /* --- 1. THE BRAIN --- */
+    let DoaBrain = {
+        fillers: ["honestly", "truth be told", "overall"],
+        victory_words: ["Brilliant", "Spectacular", "Awesome"],
+        personal_states: ["steady", "balanced", "centered"],
+        modules: {
+            empathy: { reactions: ["I'm so incredibly sorry."], check_ins: ["Are you holding up okay?"] }
+        }
+    };
+
+    async function pollinate() {
+        try {
+            const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
+            if(res.ok) DoaBrain = await res.json();
+        } catch(e) { console.log("Using seed brain."); }
+    }
+
+    function constructDoaResponse(val) {
+        const low = val.toLowerCase();
+        const f = DoaBrain.fillers[Math.floor(Math.random() * DoaBrain.fillers.length)];
+        
+        if (low.includes("got an a") || low.includes("won") || low.includes("amazing")) {
+            return `${DoaBrain.victory_words[0]}! That's great. I'm feeling pretty vibrant hearing that!`;
+        }
+        if (low.includes("bad") || low.includes("not okay")) {
+            return DoaBrain.modules.empathy.reactions[0] + " " + DoaBrain.modules.empathy.check_ins[0];
+        }
+        return `I'm feeling pretty ${DoaBrain.personal_states[0]} ${f}. How is the mission unfolding?`;
+    }
+
+    /* --- 2. UI NAVIGATION & CORE --- */
+    function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('closed'); }
+
+    function switchView(view) {
+        document.querySelectorAll('.view-container, #calendar-view, #game-view, #apps-view').forEach(v => v.style.display = 'none');
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
+        
+        const target = document.getElementById(view + '-view');
+        if (target) target.style.display = 'flex';
+        
+        const btn = document.getElementById('btn-' + view);
+        if (btn) btn.classList.add('sidebar-active');
+        
+        if (view === 'game') initGhostBuster();
+    }
+
+    function addMessage(sender, text) {
+        const h = document.getElementById('chat-history');
+        const row = document.createElement('div');
+        row.className = `chat-bubble-row row-${sender}`;
+        row.innerHTML = `<div class="bubble-wrapper"><div class="bubble-content bubble-${sender}">${text}</div></div>`;
+        h.appendChild(row);
+        document.body.className = 'mode-chatting';
+        h.scrollTop = h.scrollHeight;
+    }
+
+    function handleMessage() {
+        const input = document.getElementById('user-input');
+        const val = input.value.trim();
+        if(!val) return;
+        addMessage('user', val);
+        input.value = "";
+        setTimeout(() => {
+            const res = constructDoaResponse(val);
+            addMessage('doa', res);
+            speak(res);
+        }, 450);
+    }
+
+    // Voice and Game functions...
+    function toggleVoice() { /* ...your toggle code... */ }
+    function speak(text) { /* ...your speak code... */ }
+    function initGhostBuster() { /* ...your game code... */ }
+
+    // THE MASTER INITIALIZER
+    window.onload = () => { 
+        pollinate(); 
+        // Ensure buttons work
+        document.getElementById('user-input').addEventListener('keydown', (e) => { if(e.key==='Enter') handleMessage(); });
+    };
     /* --- ART ENGINES --- */
     const DoaArtEngine = {
         palettes: {
