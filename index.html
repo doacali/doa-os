@@ -209,79 +209,123 @@
     <div id="apps-view" style="display: none; padding: 40px; background: white;"><h1 style="font-size: 32px; font-weight: 900;">📱 App Factory</h1></div>
   </main>
 
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doa | AI Operating System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* (Your existing CSS remains here - I'm keeping it brief to focus on the fix) */
+    *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #f3f4f6; }
+    html { line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; height: 100%; }
+    body { margin: 0; background: #ffffff; color: #111827; height: 100vh; width: 100vw; overflow: hidden; display: flex; }
+    button { cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; transition: 0.2s; }
+    #main-sidebar { position: fixed; left: 0; top: 0; height: 100vh; width: 260px; transition: 0.3s; z-index: 100; background: white; border-right: 1px solid #f3f4f6; display: flex; flex-direction: column; }
+    #main-sidebar.closed { transform: translateX(-100%); }
+    main { flex: 1; transition: padding-left 0.3s; padding-left: 260px; height: 100vh; display: flex; flex-direction: column; position: relative; }
+    #main-sidebar.closed ~ main { padding-left: 0; }
+    .sidebar-item { border-radius: 14px; display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 0 16px 4px 16px; padding: 11px 12px; font-weight: 700; color: #9ca3af; font-size: 13px; cursor: pointer;}
+    .sidebar-active { background: #111111 !important; color: white !important; }
+    .view-container { flex: 1; width: 100%; display: flex; overflow: hidden; position: relative; }
+    #chat-history { display: flex; flex: 1; overflow-y: auto; flex-direction: column; padding: 40px; }
+    .chat-bubble-row { display: flex; margin-bottom: 24px; }
+    .bubble-content { padding: 16px 20px; border-radius: 24px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .row-user { justify-content: flex-end; } .bubble-user { background: #000; color: #fff; }
+    .row-doa { justify-content: flex-start; } .bubble-doa { background: #f3f4f6; color: #111; }
+  </style>
+</head>
+<body>
+
+  <aside id="main-sidebar">
+    <h1 style="color: #00E676; padding: 24px; font-weight: 900;" onclick="location.reload()">DOA CALI</h1>
+    <button onclick="startNewChat()" class="sidebar-item" style="border:1px solid #eee;">+ New Chat</button>
+    <button onclick="switchView('chat')" id="btn-chat" class="sidebar-item sidebar-active">💬 Chat With Doa</button>
+    <button onclick="switchView('calendar')" id="btn-calendar" class="sidebar-item">📅 Calendar</button>
+    <button onclick="switchView('game')" id="btn-game" class="sidebar-item">👻 Ghost Buster</button>
+  </aside>
+
+  <main>
+    <div id="chat-view" class="view-container">
+        <div id="chat-history" style="flex:1;"></div>
+        <div style="padding: 20px; display: flex;">
+            <input type="text" id="user-input" style="flex:1; padding:15px; border:1px solid #ccc; border-radius:20px;">
+            <button onclick="handleMessage()" style="padding:15px;">Send</button>
+        </div>
+    </div>
+    <div id="calendar-view" class="view-container" style="display:none; padding:40px;"><h1>Calendar</h1></div>
+    <div id="game-view" style="display:none; background:#000; flex:1;"><canvas id="game-canvas"></canvas></div>
+  </main>
+
   <script>
-    /* --- 1. CORE BRAIN --- */
+    /* --- 1. THE BRAIN --- */
     let DoaBrain = {
-        fillers: ["honestly", "truth be told", "overall"],
-        victory_words: ["Brilliant", "Spectacular", "Awesome", "Great"],
-        personal_states: ["steady", "balanced", "centered", "vibrant"],
-        system_states: ["exponentially good", "operational", "aligned"],
-        softeners: ["pretty", "very"],
+        fillers: ["honestly", "overall", "really"],
+        victory_words: ["Brilliant", "Spectacular", "Great"],
+        personal_states: ["steady", "vibrant", "centered"],
         modules: {
-            empathy: { reactions: ["I'm so incredibly sorry."], check_ins: ["Are you holding up okay?"] }
+            empathy: { reactions: ["I'm so sorry."], check_ins: ["Are you okay?"] }
         }
     };
 
-    /* --- 2. LOGIC ENGINE --- */
-    function pick(arr) { return arr ? arr[Math.floor(Math.random() * arr.length)] : ""; }
+    // Sync Brain
+    async function pollinate() {
+        try {
+            const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
+            if (res.ok) DoaBrain = await res.json();
+        } catch(e) { console.log("Offline mode."); }
+    }
 
+    /* --- 2. LOGIC --- */
     function constructDoaResponse(val) {
         const low = val.toLowerCase();
-        const f = pick(DoaBrain.fillers);
-        
-        if (low.includes("got an a") || low.includes("won") || low.includes("amazing")) {
-            return `${pick(DoaBrain.victory_words)}! That's great to hear. I'm feeling ${pick(DoaBrain.softeners)} vibrant hearing that!`;
-        }
-        if (low.includes("bad") || low.includes("not okay")) {
-            return pick(DoaBrain.modules.empathy.reactions) + " " + pick(DoaBrain.modules.empathy.check_ins);
-        }
-        
-        return `I'm feeling ${pick(DoaBrain.softeners)} ${pick(DoaBrain.personal_states)} ${f}. How is the mission unfolding?`;
+        if (low.includes("got an a") || low.includes("won")) return "Brilliant! That's great to hear.";
+        if (low.includes("bad") || low.includes("lost")) return DoaBrain.modules.empathy.reactions[0] + " " + DoaBrain.modules.empathy.check_ins[0];
+        return `I'm feeling pretty ${DoaBrain.personal_states[0]}. How's the mission unfolding?`;
     }
 
-    /* --- 3. UI HANDLERS --- */
-    function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('closed'); }
-    
-    function switchView(viewName) {
-        // Hide all views
-        document.querySelectorAll('.view-container, #calendar-view, #game-view, #apps-view').forEach(v => v.style.display = 'none');
-        
-        // Show selected
-        const target = document.getElementById(viewName + '-view');
-        if (target) {
-            target.style.display = 'flex';
-        }
-        
-        // Handle Sidebar Active Class
+    /* --- 3. UI FUNCTIONS (The missing ones) --- */
+    function switchView(view) {
+        document.querySelectorAll('.view-container, #game-view').forEach(v => v.style.display = 'none');
+        document.getElementById(view + '-view').style.display = 'flex';
         document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
-        const btn = document.getElementById('btn-' + viewName);
-        if (btn) btn.classList.add('sidebar-active');
+        document.getElementById('btn-' + view).classList.add('sidebar-active');
+        if (view === 'game') initGhostBuster();
     }
+    
+    function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('closed'); }
 
     function addMessage(sender, text) {
-        const history = document.getElementById('chat-history');
-        if(!history) return;
+        const h = document.getElementById('chat-history');
         const row = document.createElement('div');
-        row.className = `chat-bubble-row ${sender === 'user' ? 'row-user' : 'row-doa'}`;
-        row.innerHTML = `<div class="bubble-wrapper"><div class="bubble-content ${sender === 'user' ? 'bubble-user' : 'bubble-doa'}">${text}</div></div>`;
-        history.appendChild(row);
-        document.body.classList.add('mode-chatting');
-        history.scrollTop = history.scrollHeight;
+        row.className = `chat-bubble-row row-${sender}`;
+        row.innerHTML = `<div class="bubble-content">${text}</div>`;
+        h.appendChild(row);
+        h.scrollTop = h.scrollHeight;
     }
 
     function handleMessage() {
         const input = document.getElementById('user-input');
-        const val = input.value.trim();
-        if(!val) return;
-        addMessage('user', val);
+        if(!input.value.trim()) return;
+        addMessage('user', input.value);
+        const val = input.value;
         input.value = "";
-        setTimeout(() => addMessage('doa', constructDoaResponse(val)), 450);
+        setTimeout(() => addMessage('doa', constructDoaResponse(val)), 400);
     }
 
-    // Initialize View
-    window.onload = () => {
-        switchView('chat');
-    };
+    function initGhostBuster() {
+        const c = document.getElementById('game-canvas'), ctx = c.getContext('2d');
+        c.width = 600; c.height = 400;
+        let g = {x:0, y:200};
+        function draw() { ctx.clearRect(0,0,c.width,c.height); ctx.font="40px Arial"; ctx.fillText("👻", g.x, g.y); g.x+=2; if(g.x>c.width) g.x=-40; requestAnimationFrame(draw); }
+        draw();
+    }
+
+    window.onload = () => { pollinate(); };
+    document.getElementById('user-input').addEventListener('keydown', (e) => { if(e.key==='Enter') handleMessage(); });
   </script>
+</body>
+</html>
 </body>
 </html>
