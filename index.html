@@ -222,7 +222,7 @@
         }
     };
 
-    /* --- 2. CORE FUNCTIONS --- */
+    /* --- 2. LOGIC ENGINE --- */
     function pick(arr) { return arr ? arr[Math.floor(Math.random() * arr.length)] : ""; }
 
     function constructDoaResponse(val) {
@@ -239,28 +239,33 @@
         return `I'm feeling ${pick(DoaBrain.softeners)} ${pick(DoaBrain.personal_states)} ${f}. How is the mission unfolding?`;
     }
 
-    /* --- 3. UI HANDLERS (These make the buttons work) --- */
+    /* --- 3. UI HANDLERS --- */
     function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('closed'); }
     
-    function switchView(view) {
+    function switchView(viewName) {
         // Hide all views
         document.querySelectorAll('.view-container, #calendar-view, #game-view, #apps-view').forEach(v => v.style.display = 'none');
-        // Show target
-        const target = document.getElementById(view + '-view');
-        if (target) target.style.display = 'flex';
-        // Set active button
+        
+        // Show selected
+        const target = document.getElementById(viewName + '-view');
+        if (target) {
+            target.style.display = 'flex';
+        }
+        
+        // Handle Sidebar Active Class
         document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
-        const btn = document.getElementById('btn-' + view);
+        const btn = document.getElementById('btn-' + viewName);
         if (btn) btn.classList.add('sidebar-active');
     }
 
     function addMessage(sender, text) {
         const history = document.getElementById('chat-history');
+        if(!history) return;
         const row = document.createElement('div');
         row.className = `chat-bubble-row ${sender === 'user' ? 'row-user' : 'row-doa'}`;
         row.innerHTML = `<div class="bubble-wrapper"><div class="bubble-content ${sender === 'user' ? 'bubble-user' : 'bubble-doa'}">${text}</div></div>`;
         history.appendChild(row);
-        document.body.className = 'mode-chatting';
+        document.body.classList.add('mode-chatting');
         history.scrollTop = history.scrollHeight;
     }
 
@@ -273,8 +278,10 @@
         setTimeout(() => addMessage('doa', constructDoaResponse(val)), 450);
     }
 
-    // Initialize
-    document.getElementById('user-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleMessage(); });
+    // Initialize View
+    window.onload = () => {
+        switchView('chat');
+    };
   </script>
 </body>
 </html>
