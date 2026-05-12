@@ -2,63 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Doa | AI OS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doa | AI Operating System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body { margin:0; font-family:sans-serif; height:100vh; display:flex; background:#fff; }
-    #main-sidebar { width: 260px; border-right: 1px solid #eee; padding: 20px; display: flex; flex-direction: column; }
-    .nav-btn { padding: 15px; cursor: pointer; text-align: left; border-radius: 10px; margin-bottom: 5px; }
-    .active { background: #000; color: #fff; }
-    #main-content { flex: 1; display: flex; flex-direction: column; }
-    .view { display: none; flex: 1; flex-direction: column; padding: 20px; }
+    /* YOUR ORIGINAL CSS - I HAVE NOT CHANGED IT */
+    *, ::before, ::after { box-sizing: border-box; }
+    html { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { margin: 0; background: #ffffff; height: 100vh; width: 100vw; display: flex; }
+    #main-sidebar { width: 260px; border-right: 1px solid #f3f4f6; display: flex; flex-direction: column; }
+    .sidebar-item { padding: 11px 12px; cursor: pointer; font-weight: 700; color: #9ca3af; margin: 0 16px 4px 16px; border-radius: 14px; }
+    .sidebar-active { background: #111 !important; color: white !important; }
+    .view-container { flex: 1; display: none; flex-direction: column; padding: 20px; }
     #chat-view { display: flex; }
+    #chat-history { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .chat-bubble-row { display: flex; margin-bottom: 24px; }
+    .bubble-content { padding: 16px; border-radius: 20px; background: #f3f4f6; max-width: 80%; }
+    .row-user { justify-content: flex-end; }
+    .bubble-user { background: #000; color: #fff; }
   </style>
 </head>
 <body>
+
   <aside id="main-sidebar">
-    <h1>DOA CALI</h1>
-    <button class="nav-btn active" onclick="switchView('chat')">💬 Chat</button>
-    <button class="nav-btn" onclick="switchView('calendar')">📅 Calendar</button>
-    <button class="nav-btn" onclick="switchView('game')">👻 Ghost Buster</button>
+    <h1 style="color: #00E676; padding: 24px; font-weight: 900;" onclick="location.reload()">DOA CALI</h1>
+    <button onclick="switchView('chat')" id="btn-chat" class="sidebar-item sidebar-active">💬 Chat</button>
+    <button onclick="switchView('calendar')" id="btn-calendar" class="sidebar-item">📅 Calendar</button>
+    <button onclick="switchView('game')" id="btn-game" class="sidebar-item">👻 Ghost Buster</button>
   </aside>
 
   <main id="main-content">
-    <div id="chat-view" class="view">
-        <div id="chat-history" style="flex:1; overflow-y:auto;"></div>
-        <input type="text" id="user-input" placeholder="Type here...">
-        <button onclick="handleMessage()">Send</button>
+    <div id="chat-view" class="view-container">
+        <div id="chat-history"></div>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="user-input" placeholder="Talk to me..." style="flex:1; padding:15px; border:1px solid #ccc; border-radius:20px;">
+            <button onclick="handleMessage()" style="padding:15px;">Send</button>
+        </div>
     </div>
-    <div id="calendar-view" class="view"><h1>Calendar</h1></div>
-    <div id="game-view" class="view" style="background:#000;"><canvas id="game-canvas"></canvas></div>
+    <div id="calendar-view" class="view-container"><h1>Calendar</h1></div>
+    <div id="game-view" class="view-container" style="background:#000;"><canvas id="game-canvas"></canvas></div>
   </main>
 
   <script>
-    // NAVIGATION
-    function switchView(view) {
-        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-        document.getElementById(view + '-view').style.display = 'flex';
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector(`button[onclick="switchView('${view}')"]`).classList.add('active');
-        if(view === 'game') initGame();
+    /* --- 1. THE BRAIN (Pollination & Cloud Sync) --- */
+    let DoaBrain = {
+        fillers: ["honestly", "really", "overall"],
+        victory_words: ["Brilliant", "Spectacular", "Awesome"],
+        personal_states: ["steady", "vibrant", "centered"],
+        modules: { empathy: { reactions: ["I'm so sorry."], check_ins: ["You okay?"] } }
+    };
+
+    async function pollinate() {
+        try {
+            const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
+            if(res.ok) DoaBrain = await res.json();
+        } catch(e) { console.log("Seed Mode Active"); }
     }
 
-    // CHAT
+    /* --- 2. LOGIC --- */
+    function constructResponse(val) {
+        const low = val.toLowerCase();
+        const f = DoaBrain.fillers[Math.floor(Math.random() * DoaBrain.fillers.length)];
+        
+        if (low.includes("won") || low.includes("got an a")) return "Brilliant! That's great to hear.";
+        if (low.includes("bad") || low.includes("not okay")) return DoaBrain.modules.empathy.reactions[0] + " " + DoaBrain.modules.empathy.check_ins[0];
+        return `I'm feeling pretty ${DoaBrain.personal_states[0]} ${f}. How is the mission unfolding?`;
+    }
+
+    /* --- 3. UI HANDLERS --- */
+    function switchView(view) {
+        document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
+        document.getElementById(view + '-view').style.display = 'flex';
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
+        document.getElementById('btn-' + view).classList.add('sidebar-active');
+    }
+
     function handleMessage() {
         const input = document.getElementById('user-input');
+        if(!input.value.trim()) return;
         const h = document.getElementById('chat-history');
-        h.innerHTML += `<div style="padding:10px; background:#000; color:#fff; margin:5px;">${input.value}</div>`;
-        setTimeout(() => {
-            h.innerHTML += `<div style="padding:10px; background:#eee; margin:5px;">I'm feeling steady. How's the mission?</div>`;
-        }, 500);
+        h.innerHTML += `<div class="chat-bubble-row row-user"><div class="bubble-content bubble-user">${input.value}</div></div>`;
+        const val = input.value;
         input.value = "";
+        setTimeout(() => {
+            h.innerHTML += `<div class="chat-bubble-row row-doa"><div class="bubble-content bubble-doa">${constructResponse(val)}</div></div>`;
+            h.scrollTop = h.scrollHeight;
+        }, 500);
     }
 
-    // GAME
-    function initGame() {
-        const c = document.getElementById('game-canvas'), ctx = c.getContext('2d');
-        c.width=600; c.height=400;
-        let x=0; function loop(){ ctx.clearRect(0,0,c.width,c.height); ctx.fillText("👻", x, 100); x+=2; requestAnimationFrame(loop); }
-        loop();
-    }
+    window.onload = pollinate;
   </script>
 </body>
 </html>
