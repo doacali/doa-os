@@ -528,6 +528,60 @@
 
     window.onload = () => { updateVoiceUI(); if (chatMemory.length > 0) { document.body.className = 'mode-chatting'; chatMemory.forEach(m => addMessage(m.role === 'user' ? 'user' : 'doa', m.content)); } switchView('chat'); };
     document.getElementById('user-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleMessage(); } });
+    
+    /* --- THE BRAIN --- */
+    let DoaBrain = {
+        fillers: ["honestly", "truth be told", "overall", "really", "by now"],
+        victory_words: ["Brilliant", "Spectacular", "Awesome", "Great", "Stunning"],
+        personal_states: ["steady", "balanced", "centered", "right", "clear", "smooth", "good"],
+        system_states: ["exponentially good", "wonderful", "radiant", "operational", "aligned"],
+        softeners: ["pretty", "very"],
+        modules: {
+            empathy: { reactions: ["I'm so incredibly sorry."], check_ins: ["Are you holding up okay?"] },
+            finance: { verbs: ["scaling", "securing"], nouns: ["the bag", "the empire"] }
+        }
+    };
+
+    // This fetches your words.json from GitHub (jsDelivr)
+    async function pollinate() {
+        try {
+            const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
+            if (res.ok) {
+                const fresh = await res.json();
+                DoaBrain = fresh;
+                console.log("Brain Synchronized.");
+            }
+        } catch (e) { console.log("Using local seed."); }
+    }
+
+    function pick(arr) { return arr ? arr[Math.floor(Math.random() * arr.length)] : ""; }
+
+    function constructDoaResponse(val) {
+        const low = val.toLowerCase();
+        const f = pick(DoaBrain.fillers);
+        const soft = pick(DoaBrain.softeners);
+        const vic = pick(DoaBrain.victory_words);
+        const p = pick(["the whole crew", "your partner", "your mom", "the fam", "your bestie"]);
+
+        // 1. Victory
+        if (low.includes("got an a") || low.includes("won") || low.includes("finished") || low.includes("amazing")) {
+            return `${vic}! That's great to hear. I'm feeling ${soft} vibrant hearing that!`;
+        }
+
+        // 2. Empathy
+        if (low.includes("bad") || low.includes("not okay") || low.includes("lost")) {
+            return pick(DoaBrain.modules.empathy.reactions) + " " + pick(DoaBrain.modules.empathy.check_ins);
+        }
+        
+        // 3. Default
+        return `I'm feeling ${soft} ${pick(DoaBrain.personal_states)} ${f}. How is the mission unfolding today?`;
+    }
+
+    // IMPORTANT: Make sure this is called when the page loads
+    window.onload = () => { 
+        pollinate(); 
+        // ... (Keep any other window.onload code you had here)
+    };
   </script>
 </body>
 </html>
