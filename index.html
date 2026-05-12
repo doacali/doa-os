@@ -223,6 +223,97 @@
   </main>
 
   <script>
+    <script>
+    /* --- 1. THE FEDERATED BRAIN (Master Knowledge) --- */
+    let FederatedBrain = {
+        words: {
+            fillers: ["honestly", "truth be told", "overall", "really"],
+            victory: ["Brilliant", "Spectacular", "Awesome", "Great", "Stunning"],
+            states: ["steady", "balanced", "centered", "right", "clear", "smooth", "good"],
+            empathy: ["I'm so incredibly sorry.", "Man, that is heavy.", "That sounds like a nightmare."],
+            check_ins: ["Are you holding up okay?", "I'm right here with you.", "Sending you some light."],
+            handling_contexts: ["How is the team handling {subject}?", "How are you handling {subject} these days?"]
+        },
+        afinn: { "good": 3, "bad": -3, "amazing": 4, "awful": -5, "won": 4, "fail": -3 },
+        quotes: ["The best way out is always through."],
+        animals: ["wolf", "eagle", "tiger"],
+        
+        async init() {
+            try {
+                const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
+                if (res.ok) {
+                    const data = await res.json();
+                    if(data.fillers) this.words.fillers = data.fillers;
+                    document.getElementById('status-display').innerText = "CLOUD BRAIN ACTIVE";
+                }
+            } catch (e) { document.getElementById('status-display').innerText = "SEED MODE ACTIVE"; }
+        },
+        
+        pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; },
+        scoreSentiment(text) { return 0; } // Placeholder
+    };
+
+    /* --- 2. LOGIC ENGINE --- */
+    function constructDoaResponse(val) {
+        const low = val.toLowerCase();
+        const b = FederatedBrain.words;
+        const f = FederatedBrain.pick(b.fillers);
+        
+        if (low.includes("got an a") || low.includes("won") || low.includes("finished")) {
+            return `${FederatedBrain.pick(b.victory)}! That's great. I'm feeling pretty vibrant hearing that!`;
+        }
+        if (low.includes("bad") || low.includes("not okay")) {
+            return FederatedBrain.pick(b.empathy.reactions) + " " + FederatedBrain.pick(b.empathy.check_ins);
+        }
+        return `I'm feeling pretty ${FederatedBrain.pick(b.states)} ${f}. How is the mission unfolding?`;
+    }
+
+    /* --- 3. UI HANDLERS (Fixing your button issues) --- */
+    function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('closed'); }
+    
+    function switchView(view) {
+        document.querySelectorAll('.view-container, #game-view, #apps-view').forEach(v => v.style.display = 'none');
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
+        const target = document.getElementById(view + '-view');
+        if (target) {
+            target.style.display = (view === 'game' ? 'flex' : 'flex');
+            document.getElementById('btn-' + view).classList.add('sidebar-active');
+        }
+        if (view === 'game') initGhostBuster();
+    }
+
+    async function handleMessage() {
+        const input = document.getElementById('user-input');
+        const val = input.value.trim();
+        if (!val) return;
+        
+        // Visual
+        addMessage('user', val);
+        input.value = "";
+        
+        // Logic
+        setTimeout(() => {
+            const res = constructDoaResponse(val);
+            addMessage('doa', res);
+            speak(res);
+        }, 450);
+    }
+
+    function addMessage(sender, text) {
+        const history = document.getElementById('chat-history');
+        const row = document.createElement('div');
+        row.className = `chat-bubble-row row-${sender}`;
+        row.innerHTML = `<div class="bubble-wrapper"><div class="bubble-content bubble-${sender}">${text}</div></div>`;
+        history.appendChild(row);
+        document.body.className = 'mode-chatting';
+        history.scrollTop = history.scrollHeight;
+    }
+
+    // --- INIT ---
+    window.onload = () => {
+        FederatedBrain.init();
+        document.getElementById('user-input').addEventListener('keydown', (e) => { if(e.key==='Enter') handleMessage(); });
+    };
     /* ============================================================
        SEED FALLBACK — used if fetches fail
     ============================================================ */
