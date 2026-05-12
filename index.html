@@ -1,78 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- [Keep your existing head/style exactly as is, I am providing the Script Integration] -->
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Doa | AI Operating System</title>
-  <!-- ... (Keep your existing CSS/Style tags here to maintain your layout) ... -->
+  <style>
+    body { margin: 0; font-family: sans-serif; background: white; display: flex; height: 100vh; }
+    #main-sidebar { width: 260px; border-right: 1px solid #eee; display: flex; flex-direction: column; padding: 20px; }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #chat-history { width: 100%; max-width: 600px; height: 70vh; overflow-y: auto; border: 1px solid #eee; padding: 20px; margin-bottom: 20px; }
+    .msg { padding: 10px; margin: 5px; border-radius: 10px; }
+    .user { background: #000; color: #fff; align-self: flex-end; }
+    .doa { background: #eee; align-self: flex-start; }
+  </style>
 </head>
-<body class="mode-empty">
-  <!-- ... (Keep your existing HTML Sidebar/Main structure) ... -->
+<body>
+  <aside id="main-sidebar">
+    <h1>DOA CALI</h1>
+    <button onclick="location.reload()">Refresh System</button>
+  </aside>
+  <main>
+    <div id="chat-history"></div>
+    <div style="width: 100%; max-width: 600px; display: flex;">
+      <input type="text" id="user-input" style="flex:1; padding:10px;">
+      <button onclick="handleMessage()">Send</button>
+    </div>
+  </main>
 
   <script>
-    /* --- 1. THE BRAIN SEED (Local Backup) --- */
-    let DoaBrain = {
-        fillers: ["honestly", "overall", "really"],
-        intensity: ["Gently", "Truly", "Astronomically"],
-        personal_states: ["steady", "balanced", "thriving"],
-        modules: {
-            empathy: { reactions: ["That is honestly awful."], check_ins: ["Are you holding up okay?"] },
-            finance: { nouns: ["the bag", "the empire"], verbs: ["scaling", "securing"] }
-        }
-    };
-
-    /* --- 2. POLLINATION ENGINE (Cloud Sync) --- */
-    async function pollinate() {
-        try {
-            const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
-            if (res.ok) {
-                const fresh = await res.json();
-                DoaBrain = fresh; // Bloom!
-                console.log("Brain Synchronized.");
-            }
-        } catch (e) { console.log("Using Seed Memory."); }
-    }
-
-    /* --- 3. CONSTRUCT RESPONSE (The Intelligent Logic) --- */
-    function constructDoaResponse(val) {
-        const low = val.toLowerCase();
-        const b = DoaBrain;
-        const f = pick(b.fillers);
+    function handleMessage() {
+        const input = document.getElementById('user-input');
+        const val = input.value.trim();
+        if(!val) return;
         
-        // Victory Logic
-        if (low.includes("got an a") || low.includes("won")) return "Brilliant! I'm feeling pretty vibrant hearing that!";
-        
-        // Empathy Logic
-        if (low.includes("bad") || low.includes("not okay")) return pick(b.modules.empathy.reactions) + " " + pick(b.modules.empathy.check_ins);
-        
-        // Default Logic
-        return `I'm feeling pretty ${pick(b.personal_states)} ${f}. How is the mission unfolding today?`;
+        const history = document.getElementById('chat-history');
+        const u = document.createElement('div'); u.className = 'msg user'; u.innerText = val;
+        history.appendChild(u);
+        input.value = "";
+
+        setTimeout(() => {
+            const d = document.createElement('div'); d.className = 'msg doa'; d.innerText = "Everything's unfolding well. How's the mission today?";
+            history.appendChild(d);
+        }, 500);
     }
-
-    function pick(arr) { return arr ? arr[Math.floor(Math.random() * arr.length)] : ""; }
-
-    /* --- 4. INTEGRATED HANDLER --- */
-    async function handleMessage() {
-      const input = document.getElementById('user-input'), val = input.value.trim();
-      if (!val) return;
-      document.body.className = 'mode-chatting';
-      addMessage('user', val);
-      input.value = '';
-
-      setTimeout(() => {
-        const res = constructDoaResponse(val);
-        addMessage('doa', res);
-        speak(res);
-      }, 450);
-    }
-
-    // ... (Keep your addMessage, speak, switchView, initGhostBuster functions) ...
-
-    window.onload = () => { 
-        pollinate(); 
-        // ... (rest of your original onload) ...
-    };
   </script>
 </body>
 </html>
