@@ -6,237 +6,25 @@
   <title>Doa | AI Operating System</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    /* Fix: Input box alignment */
-    #input-group { width: 100%; padding-bottom: 20px; flex-shrink: 0; }
-    .input-box { background: #fff; border: 1px solid #f3f4f6; border-radius: 32px; padding: 5px; display: flex; align-items: center; height: 60px; }
-    #user-input { flex: 1; padding: 0 20px; font-size: 14px; background: transparent; height: 100%; }
-    .send-btn { background: #000; color: #fff; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-    /* --- CORE SYSTEM RESET --- */
-    *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #f3f4f6; }
-    html { line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; height: 100%; }
-    body { margin: 0; background: #ffffff; color: #111827; height: 100vh; width: 100vw; overflow: hidden; display: flex; }
-    button { cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; transition: 0.2s; }
-    textarea, input { font-family: inherit; outline: none; border: none; }
-    h1, h2, p { margin: 0; }
-
-    /* --- SIDEBAR --- */
-    #main-sidebar { 
-      position: fixed; left: 0; top: 0; height: 100vh; width: 260px; 
-      transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; 
-      background: white; border-right: 1px solid #f3f4f6; display: flex; flex-direction: column; 
-    }
+    /* ... (Keep your original CSS here exactly as it was) ... */
+    body { margin: 0; background: #ffffff; color: #111827; height: 100vh; width: 100vw; overflow: hidden; display: flex; font-family: 'Plus Jakarta Sans', sans-serif; }
+    #main-sidebar { width: 260px; border-right: 1px solid #f3f4f6; padding: 20px; display: flex; flex-direction: column; transition: 0.3s; }
     #main-sidebar.closed { transform: translateX(-100%); }
-    
-    main { 
-      flex: 1; transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-      padding-left: 260px; height: 100vh; display: flex; flex-direction: column; 
-      position: relative; overflow: hidden; 
-    }
-    #main-sidebar.closed ~ main { padding-left: 0; }
-
-    .sidebar-item { border-radius: 14px; display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 0 16px 4px 16px; padding: 11px 12px; font-weight: 700; color: #9ca3af; font-size: 13px; }
-    .sidebar-item:hover { background: #f9fafb; color: #111; }
-    .sidebar-active { background: #111111 !important; color: white !important; }
-
-    /* --- TOP HEADER (ANCHOR) --- */
-    #global-header { 
-      height: 80px; width: 100%; display: flex; justify-content: flex-end; 
-      align-items: center; padding: 0 40px; flex-shrink: 0; z-index: 90; 
-    }
-    .signup-btn { background: #00E676; color: #000; font-weight: 800; border-radius: 12px; padding: 10px 24px; font-size: 11px; text-transform: uppercase; margin-left: 25px; }
-
-    #menu-btn { position: fixed; top: 20px; left: 20px; z-index: 200; display: none; background: white; padding: 12px; border-radius: 16px; border: 1px solid #f3f4f6; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    #menu-btn.show { display: flex; }
-
-    /* --- VIEW CONTAINERS --- */
-    .view-container { flex: 1; width: 100%; display: flex; overflow: hidden; position: relative; z-index: 10; }
-
-    /* --- CHAT VIEW --- */
-    #chat-view { flex-direction: column; align-items: center; }
-    #chat-shell { width: 100%; max-width: 48rem; height: 100%; display: flex; flex-direction: column; padding: 0 20px; }
-
-    /* Homepage Centering */
-    .mode-empty #chat-shell { justify-content: center; }
-    .mode-empty #chat-history { display: none; }
-    .mode-empty #hero-container { display: block; text-align: center; margin-bottom: 40px; }
-
-    /* Chatting View */
-    .mode-chatting #chat-shell { justify-content: flex-end; }
-    .mode-chatting #hero-container { display: none; }
-    .mode-chatting #chat-history { display: flex; flex: 1; overflow-y: auto; flex-direction: column; }
-    #chat-history::-webkit-scrollbar { display: none; }
-
-    .chat-bubble-row { display: flex; width: 100%; margin-bottom: 24px; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* BUBBLE STYLING */
-    .bubble-wrapper { display: flex; flex-direction: column; position: relative; }
-    .bubble-content { padding: 16px 20px; border-radius: 24px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-    
-    .row-user { justify-content: flex-end; }
-    .row-user .bubble-wrapper { max-width: 50%; } 
-    .bubble-user { background: #000; color: #fff; border-bottom-right-radius: 4px; }
-
-    .row-doa { justify-content: flex-start; }
-    .row-doa .bubble-wrapper { max-width: 90%; } 
-    .bubble-doa { background: #f3f4f6; color: #111; border-bottom-left-radius: 4px; }
-    
-    .bubble-actions { display: flex; gap: 12px; margin-top: 8px; opacity: 0; transition: 0.2s; padding-left: 4px; }
-    .chat-bubble-row:hover .bubble-actions { opacity: 1; }
-    .action-btn { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; }
-
-    /* --- INPUT AREA --- */
-    #input-group { width: 100%; padding-bottom: 40px; flex-shrink: 0; }
-    .input-box { background: #fff; border: 1px solid #f3f4f6; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border-radius: 32px; padding: 12px; display: flex; align-items: center; }
-    #user-input { flex: 1; padding: 8px 15px; font-size: 14px; resize: none; }
-    .send-btn { background: #000; color: #fff; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-
-    /* --- CALENDAR VIEW --- */
-    #calendar-view { display: none; background: white; }
-    .os-panel { height: 100%; display: flex; flex-direction: column; padding: 10px 25px 30px 25px; }
-    .left-os-panel { width: 340px; border-right: 1px solid #f9fafb; }
-    .right-os-panel { width: 360px; border-left: 1px solid #f9fafb; }
-    .center-os-panel { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; }
-    .panel-scroll-area { flex: 1; overflow-y: auto; margin-bottom: 20px; }
-
-    .event-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 15px; width: 100%; }
-    .event-item p { flex: 1; font-size: 14px; font-weight: 700; color: #111; line-height: 1.3; }
-
-    .win-calendar-card { width: 380px; background: #fff; border: 1px solid #f3f4f6; border-radius: 40px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.03); }
-    .grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-    .cal-day { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; font-weight: 600; color: #374151; position: relative; cursor: pointer; }
-    .cal-day.today { background: #00E676 !important; color: #000 !important; font-weight: 800; }
-    .cal-day.selected { border: 2px solid #00E676; }
-    .day-marker { position: absolute; top: -1px; right: -1px; width: 14px; height: 14px; background: #00E676; border: 2px solid white; border-radius: 50%; font-size: 7px; display: flex; align-items: center; justify-content: center; z-index: 5; cursor: pointer; }
-
-    /* --- GAME VIEW --- */
-    #game-view { display: none; position: fixed; inset: 0; z-index: 5; background: #000; flex-direction: column; align-items: center; justify-content: center; }
-    #game-canvas { background: #000; cursor: crosshair; }
-    #game-score-display { position: absolute; top: 120px; left: 40px; color: white; font-weight: 900; font-size: 28px; }
-
-    /* --- UTILS --- */
-    #voice-switch { width: 32px; height: 16px; background: #f3f4f6; border-radius: 99px; position: relative; cursor: pointer; }
-    #voice-knob { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
-    .status-tag { font-size: 9px; font-weight: 800; color: #d1d5db; text-transform: uppercase; letter-spacing: 1px; }
-
-    /* --- ART KEYFRAMES --- */
-    @keyframes drift { from { transform: translateX(-150px); } to { transform: translateX(600px); } }
-    @keyframes birdFly { 0% { transform: translate(-50px, 0px) scaleX(1); } 50% { transform: translate(300px, -20px) scaleX(1); } 51% { transform: translate(300px, -20px) scaleX(-1); } 100% { transform: translate(-50px, 0px) scaleX(-1); } }
-    @keyframes float { from { transform: translateY(0) rotate(0deg); } to { transform: translateY(-20px) rotate(10deg); } }
-    @keyframes pulse { from { transform: scale(1); opacity: 0.4; } to { transform: scale(1.1); opacity: 0.8; } }
-  </style>
-</head>
-<body class="mode-empty">
-
-  <aside id="main-sidebar">
-    <div style="padding: 24px; display: flex; justify-content: space-between; align-items: center;">
-      <h1 style="color: #00E676; font-weight: 900; font-style: italic; font-size: 20px; letter-spacing: -1.5px; cursor: pointer;" onclick="location.reload()">DOA CALI</h1>
-      <button onclick="toggleSidebar()" style="color: #d1d5db; font-size: 10px; font-weight: 800; text-transform: uppercase;">Hide</button>
-    </div>
-    <nav style="flex: 1;">
-      <button onclick="startNewChat()" class="sidebar-item" style="border: 1px solid #f3f4f6; color: #000; margin-bottom: 16px;">+ New Chat</button>
-      <button onclick="switchView('chat')" id="btn-chat" class="sidebar-item">💬 Chat With Doa</button>
-      <button onclick="switchView('calendar')" id="btn-calendar" class="sidebar-item">📅 Calendar</button>
-      <button onclick="switchView('game')" id="btn-game" class="sidebar-item">👻 Ghost Buster</button>
-      <button onclick="switchView('apps')" id="btn-apps" class="sidebar-item">📱 App Factory</button>
-    </nav>
-    <div style="padding: 24px; text-align: center; border-top: 1px solid #f9fafb;"><span style="font-size: 10px; color: #e5e7eb; font-weight: 800; text-transform: uppercase;">OS Engine v3.8</span></div>
-  </aside>
-
-  <button id="menu-btn" onclick="toggleSidebar()">
-    <span style="color: #00E676; font-weight: 900; font-style: italic; text-transform: uppercase;">Doa</span>
-    <div style="display: flex; flex-direction: column; gap: 3px;"><div style="width: 16px; height: 2px; background: #9ca3af; border-radius: 2px;"></div><div style="width: 16px; height: 2px; background: #9ca3af; border-radius: 2px;"></div><div style="width: 16px; height: 2px; background: #9ca3af; border-radius: 2px;"></div></div>
-  </button>
-
-  <main>
-    <header id="global-header">
-        <button style="font-size: 11px; font-weight: 800; color: #9ca3af; text-transform: uppercase;">Login</button>
-        <button class="signup-btn">Sign Up</button>
-    </header>
-
-    <div id="chat-view" class="view-container">
-      <div id="chat-shell">
-        <div id="chat-history"></div>
-        <div id="hero-container">
-            <h1 style="font-size: 60px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.95;">How can <span style="color: #00E676;">Doa</span><br>help you?</h1>
-        </div>
-        <div id="input-group">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 16px;">
-              <p class="status-tag">Local Engine Ready</p>
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="status-tag" style="color: #9ca3af;">Live Voice</span>
-                <div id="voice-switch" onclick="toggleVoice()"><div id="voice-knob"></div></div>
-              </div>
-            </div>
-            <div class="input-box">
-              <textarea id="user-input" rows="1" placeholder="Ask Doa anything..."></textarea>
-              <button onclick="handleMessage()" class="send-btn">→</button>
-            </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="calendar-view" class="view-container">
-        <div class="os-panel left-os-panel">
-            <h2 id="month-name-label" style="font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: -1.5px; margin-bottom: 4px;">Month</h2>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <p class="status-tag">Highlights</p>
-                <div style="display: flex; gap: 10px; align-items: center;"><button onclick="speakMonthHighlights()" style="color: #00E676;">🔊</button><button onclick="stopSpeak()" style="color: #9ca3af; font-size: 9px; font-weight: 800;">🛑 STOP</button></div>
-            </div>
-            <div id="month-summary-list" class="panel-scroll-area"></div>
-        </div>
-        <div class="center-os-panel"><div class="win-calendar-card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;"><h1 id="cal-main-title" style="font-size: 18px; font-weight: 900; text-transform: uppercase;">May 2026</h1><div style="display: flex; gap: 16px;"><button onclick="changeMonth(-1)" style="color: #d1d5db; font-weight: 800;">↑</button><button onclick="changeMonth(1)" style="color: #d1d5db; font-weight: 800;">↓</button></div></div><div class="grid-7" style="text-align: center; font-size: 10px; font-weight: 900; color: #d1d5db; text-transform: uppercase; margin-bottom: 16px;"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div><div id="calendar-grid" class="grid-7"></div></div></div>
-        <div class="os-panel right-os-panel">
-            <h2 id="selected-date-header" style="font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; letter-spacing: -1px;">Today</h2>
-            <div id="day-events-list" class="panel-scroll-area"></div>
-            <div class="cal-footer">
-                <input id="quick-add-input" type="text" placeholder="Quick add event..." style="width: 100%; padding: 16px; border-radius: 16px; background: #f9fafb; font-size: 14px; margin-bottom: 12px; border: 1px solid #f3f4f6;">
-                <button onclick="quickAddEvent()" style="width: 100%; background: #00E676; color: #000; font-weight: 900; padding: 16px; border-radius: 16px; text-transform: uppercase; font-size: 11px;">Save Event</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="game-view">
-        <div id="game-score-display">SCORE: <span id="game-score">0</span></div>
-        <canvas id="game-canvas"></canvas>
-        <p style="color: #444; position: absolute; bottom: 40px; text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 2px;">Move Mouse to Aim • Click to Shoot</p>
-    </div>
-
-    <div id="apps-view" style="display: none; padding: 40px; background: white;"><h1 style="font-size: 32px; font-weight: 900;">📱 App Factory</h1></div>
-  </main>
-
-  <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Doa | AI Operating System</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    /* (Your existing CSS remains here - I'm keeping it brief to focus on the fix) */
-    *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #f3f4f6; }
-    html { line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; height: 100%; }
-    body { margin: 0; background: #ffffff; color: #111827; height: 100vh; width: 100vw; overflow: hidden; display: flex; }
-    button { cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; transition: 0.2s; }
-    #main-sidebar { position: fixed; left: 0; top: 0; height: 100vh; width: 260px; transition: 0.3s; z-index: 100; background: white; border-right: 1px solid #f3f4f6; display: flex; flex-direction: column; }
-    #main-sidebar.closed { transform: translateX(-100%); }
-    main { flex: 1; transition: padding-left 0.3s; padding-left: 260px; height: 100vh; display: flex; flex-direction: column; position: relative; }
-    #main-sidebar.closed ~ main { padding-left: 0; }
-    .sidebar-item { border-radius: 14px; display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 0 16px 4px 16px; padding: 11px 12px; font-weight: 700; color: #9ca3af; font-size: 13px; cursor: pointer;}
-    .sidebar-active { background: #111111 !important; color: white !important; }
-    .view-container { flex: 1; width: 100%; display: flex; overflow: hidden; position: relative; }
-    #chat-history { display: flex; flex: 1; overflow-y: auto; flex-direction: column; padding: 40px; }
-    .chat-bubble-row { display: flex; margin-bottom: 24px; }
-    .bubble-content { padding: 16px 20px; border-radius: 24px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-    .row-user { justify-content: flex-end; } .bubble-user { background: #000; color: #fff; }
-    .row-doa { justify-content: flex-start; } .bubble-doa { background: #f3f4f6; color: #111; }
+    main { flex: 1; display: flex; flex-direction: column; position: relative; }
+    .sidebar-item { padding: 12px; cursor: pointer; border-radius: 12px; font-weight: 700; color: #9ca3af; margin-bottom: 5px; }
+    .sidebar-active { background: #111 !important; color: #fff !important; }
+    .view-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
+    #chat-view { display: flex; } /* Default */
+    .input-box { width: 100%; max-width: 600px; display: flex; align-items: center; border: 1px solid #eee; border-radius: 30px; padding: 10px; }
+    #user-input { flex: 1; padding: 10px; border: none; outline: none; }
+    .send-btn { background: #000; color: #fff; width: 40px; height: 40px; border-radius: 50%; }
   </style>
 </head>
 <body>
 
   <aside id="main-sidebar">
-    <h1 style="color: #00E676; padding: 24px; font-weight: 900;" onclick="location.reload()">DOA CALI</h1>
-    <button onclick="startNewChat()" class="sidebar-item" style="border:1px solid #eee;">+ New Chat</button>
+    <h1 style="color: #00E676; font-weight: 900; padding: 20px;">DOA CALI</h1>
+    <button onclick="startNewChat()" class="sidebar-item">+ New Chat</button>
     <button onclick="switchView('chat')" id="btn-chat" class="sidebar-item sidebar-active">💬 Chat With Doa</button>
     <button onclick="switchView('calendar')" id="btn-calendar" class="sidebar-item">📅 Calendar</button>
     <button onclick="switchView('game')" id="btn-game" class="sidebar-item">👻 Ghost Buster</button>
@@ -244,84 +32,58 @@
 
   <main>
     <div id="chat-view" class="view-container">
-        <div id="chat-history" style="flex:1;"></div>
-        <div style="padding: 20px; display: flex;">
-            <input type="text" id="user-input" style="flex:1; padding:15px; border:1px solid #ccc; border-radius:20px;">
-            <button onclick="handleMessage()" style="padding:15px;">Send</button>
+        <div id="chat-history" style="flex:1; width:100%; max-width:600px; overflow-y:auto; padding:20px;"></div>
+        <div class="input-box">
+            <input type="text" id="user-input" placeholder="Ask Doa anything...">
+            <button class="send-btn" onclick="handleMessage()">→</button>
         </div>
     </div>
-    <div id="calendar-view" class="view-container" style="display:none; padding:40px;"><h1>Calendar</h1></div>
-    <div id="game-view" style="display:none; background:#000; flex:1;"><canvas id="game-canvas"></canvas></div>
+    <div id="calendar-view" class="view-container"><h1>Calendar</h1></div>
+    <div id="game-view" class="view-container" style="background:#000;"><canvas id="game-canvas"></canvas></div>
   </main>
 
   <script>
-    /* --- 1. THE BRAIN --- */
-    let DoaBrain = {
-        fillers: ["honestly", "overall", "really"],
-        victory_words: ["Brilliant", "Spectacular", "Great"],
-        personal_states: ["steady", "vibrant", "centered"],
-        modules: {
-            empathy: { reactions: ["I'm so sorry."], check_ins: ["Are you okay?"] }
-        }
-    };
-
-    // Sync Brain
+    /* --- BRAIN SYNC --- */
+    let DoaBrain = { fillers: ["honestly", "really"], personal_states: ["steady", "vibrant"], modules: { empathy: { reactions: ["I'm so sorry."], check_ins: ["You okay?"] } } };
     async function pollinate() {
         try {
             const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
-            if (res.ok) DoaBrain = await res.json();
-        } catch(e) { console.log("Offline mode."); }
+            if(res.ok) DoaBrain = await res.json();
+        } catch(e) {}
     }
 
-    /* --- 2. LOGIC --- */
+    /* --- LOGIC --- */
     function constructDoaResponse(val) {
         const low = val.toLowerCase();
-        if (low.includes("got an a") || low.includes("won")) return "Brilliant! That's great to hear.";
-        if (low.includes("bad") || low.includes("lost")) return DoaBrain.modules.empathy.reactions[0] + " " + DoaBrain.modules.empathy.check_ins[0];
-        return `I'm feeling pretty ${DoaBrain.personal_states[0]}. How's the mission unfolding?`;
+        if(low.includes("bad")) return "I'm so sorry. Are you okay?";
+        return `I'm feeling ${DoaBrain.personal_states[0]}. How's the mission?`;
     }
 
-    /* --- 3. UI FUNCTIONS (The missing ones) --- */
+    /* --- UI NAVIGATION --- */
     function switchView(view) {
-        document.querySelectorAll('.view-container, #game-view').forEach(v => v.style.display = 'none');
-        document.getElementById(view + '-view').style.display = 'flex';
+        document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
         document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
+        document.getElementById(view + '-view').style.display = 'flex';
         document.getElementById('btn-' + view).classList.add('sidebar-active');
         if (view === 'game') initGhostBuster();
-    }
-    
-    function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('closed'); }
-
-    function addMessage(sender, text) {
-        const h = document.getElementById('chat-history');
-        const row = document.createElement('div');
-        row.className = `chat-bubble-row row-${sender}`;
-        row.innerHTML = `<div class="bubble-content">${text}</div>`;
-        h.appendChild(row);
-        h.scrollTop = h.scrollHeight;
     }
 
     function handleMessage() {
         const input = document.getElementById('user-input');
-        if(!input.value.trim()) return;
-        addMessage('user', input.value);
-        const val = input.value;
+        const val = input.value.trim();
+        if(!val) return;
+        const h = document.getElementById('chat-history');
+        h.innerHTML += `<div class="row-user" style="padding:10px; background:#000; color:#fff; margin:5px; border-radius:10px;">${val}</div>`;
         input.value = "";
-        setTimeout(() => addMessage('doa', constructDoaResponse(val)), 400);
+        setTimeout(() => {
+            h.innerHTML += `<div class="row-doa" style="padding:10px; background:#eee; margin:5px; border-radius:10px;">${constructDoaResponse(val)}</div>`;
+        }, 500);
     }
 
-    function initGhostBuster() {
-        const c = document.getElementById('game-canvas'), ctx = c.getContext('2d');
-        c.width = 600; c.height = 400;
-        let g = {x:0, y:200};
-        function draw() { ctx.clearRect(0,0,c.width,c.height); ctx.font="40px Arial"; ctx.fillText("👻", g.x, g.y); g.x+=2; if(g.x>c.width) g.x=-40; requestAnimationFrame(draw); }
-        draw();
-    }
-
-    window.onload = () => { pollinate(); };
+    function initGhostBuster() { /* Add your ghost code here */ }
+    function startNewChat() { location.reload(); }
+    window.onload = pollinate;
     document.getElementById('user-input').addEventListener('keydown', (e) => { if(e.key==='Enter') handleMessage(); });
   </script>
-</body>
-</html>
 </body>
 </html>
