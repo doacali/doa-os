@@ -6,92 +6,574 @@
   <title>Doa | AI Operating System</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    *, ::before, ::after { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; width: 100vw; display: flex; overflow: hidden; }
+    /* --- CORE SYSTEM RESET --- */
+    *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #f3f4f6; }
+    html { line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; height: 100%; }
+    body { margin: 0; background: #ffffff; color: #111827; height: 100vh; width: 100vw; overflow: hidden; display: flex; }
+    button { cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; transition: 0.2s; }
+    textarea, input { font-family: inherit; outline: none; border: none; }
+    h1, h2, p { margin: 0; }
+
+    /* --- SIDEBAR --- */
+    #main-sidebar { 
+      position: fixed; left: 0; top: 0; height: 100vh; width: 260px; 
+      transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; 
+      background: white; border-right: 1px solid #f3f4f6; display: flex; flex-direction: column; 
+    }
+    #main-sidebar.closed { transform: translateX(-100%); }
     
-    /* Layout */
-    #main-sidebar { width: 260px; border-right: 1px solid #f3f4f6; display: flex; flex-direction: column; background: white; z-index: 100; transition: 0.3s; }
-    #main-sidebar.closed { margin-left: -260px; }
-    main { flex: 1; display: flex; flex-direction: column; position: relative; }
+    main { 
+      flex: 1; transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+      padding-left: 260px; height: 100vh; display: flex; flex-direction: column; 
+      position: relative; overflow: hidden; 
+    }
+    #main-sidebar.closed ~ main { padding-left: 0; }
+
+    .sidebar-item { border-radius: 14px; display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 0 16px 4px 16px; padding: 11px 12px; font-weight: 700; color: #9ca3af; font-size: 13px; }
+    .sidebar-item:hover { background: #f9fafb; color: #111; }
+    .sidebar-active { background: #111111 !important; color: white !important; }
+
+    /* --- TOP HEADER (ANCHOR) --- */
+    #global-header { 
+      height: 80px; width: 100%; display: flex; justify-content: flex-end; 
+      align-items: center; padding: 0 40px; flex-shrink: 0; z-index: 90; 
+    }
+    .signup-btn { background: #00E676; color: #000; font-weight: 800; border-radius: 12px; padding: 10px 24px; font-size: 11px; text-transform: uppercase; margin-left: 25px; }
+
+    #menu-btn { position: fixed; top: 20px; left: 20px; z-index: 200; display: none; background: white; padding: 12px; border-radius: 16px; border: 1px solid #f3f4f6; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    #menu-btn.show { display: flex; }
+
+    /* --- VIEW CONTAINERS --- */
+    .view-container { flex: 1; width: 100%; display: flex; overflow: hidden; position: relative; z-index: 10; }
+
+    /* --- CHAT VIEW --- */
+    #chat-view { flex-direction: column; align-items: center; }
+    #chat-shell { width: 100%; max-width: 48rem; height: 100%; display: flex; flex-direction: column; padding: 0 20px; }
+
+    /* Homepage Centering */
+    .mode-empty #chat-shell { justify-content: center; }
+    .mode-empty #chat-history { display: none; }
+    .mode-empty #hero-container { display: block; text-align: center; margin-bottom: 40px; }
+
+    /* Chatting View */
+    .mode-chatting #chat-shell { justify-content: flex-end; }
+    .mode-chatting #hero-container { display: none; }
+    .mode-chatting #chat-history { display: flex; flex: 1; overflow-y: auto; flex-direction: column; }
+    #chat-history::-webkit-scrollbar { display: none; }
+
+    .chat-bubble-row { display: flex; width: 100%; margin-bottom: 24px; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* BUBBLE STYLING */
+    .bubble-wrapper { display: flex; flex-direction: column; position: relative; }
+    .bubble-content { padding: 16px 20px; border-radius: 24px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
     
-    .sidebar-item { padding: 12px; cursor: pointer; border-radius: 12px; font-weight: 700; color: #9ca3af; margin: 0 16px 4px 16px; text-align: left; }
-    .sidebar-active { background: #111 !important; color: #fff !important; }
+    .row-user { justify-content: flex-end; }
+    .row-user .bubble-wrapper { max-width: 50%; } 
+    .bubble-user { background: #000; color: #fff; border-bottom-right-radius: 4px; }
+
+    .row-doa { justify-content: flex-start; }
+    .row-doa .bubble-wrapper { max-width: 90%; } 
+    .bubble-doa { background: #f3f4f6; color: #111; border-bottom-left-radius: 4px; }
     
-    /* Views */
-    .view-container { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; }
-    #chat-view { display: flex; } /* Start with chat visible */
-    
-    #chat-shell { width: 100%; max-width: 48rem; height: 100%; display: flex; flex-direction: column; padding: 20px; }
-    #chat-history { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-    .chat-bubble-row { display: flex; width: 100%; }
-    .bubble-content { padding: 16px; border-radius: 20px; font-size: 14px; max-width: 80%; }
-    .row-user { justify-content: flex-end; } .bubble-user { background: #000; color: #fff; }
-    .row-doa { justify-content: flex-start; } .bubble-doa { background: #f3f4f6; }
-    
-    .input-box { width: 100%; padding: 20px; display: flex; gap: 10px; }
-    input { flex: 1; padding: 15px; border: 1px solid #ddd; border-radius: 30px; }
+    .bubble-actions { display: flex; gap: 12px; margin-top: 8px; opacity: 0; transition: 0.2s; padding-left: 4px; }
+    .chat-bubble-row:hover .bubble-actions { opacity: 1; }
+    .action-btn { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; }
+
+    /* --- INPUT AREA --- */
+    #input-group { width: 100%; padding-bottom: 40px; flex-shrink: 0; }
+    .input-box { background: #fff; border: 1px solid #f3f4f6; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border-radius: 32px; padding: 12px; display: flex; align-items: center; }
+    #user-input { flex: 1; padding: 8px 15px; font-size: 14px; resize: none; }
+    .send-btn { background: #000; color: #fff; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+    /* --- CALENDAR VIEW --- */
+    #calendar-view { display: none; background: white; }
+    .os-panel { height: 100%; display: flex; flex-direction: column; padding: 10px 25px 30px 25px; }
+    .left-os-panel { width: 340px; border-right: 1px solid #f9fafb; }
+    .right-os-panel { width: 360px; border-left: 1px solid #f9fafb; }
+    .center-os-panel { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; }
+    .panel-scroll-area { flex: 1; overflow-y: auto; margin-bottom: 20px; }
+
+    .event-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 15px; width: 100%; }
+    .event-item p { flex: 1; font-size: 14px; font-weight: 700; color: #111; line-height: 1.3; }
+
+    .win-calendar-card { width: 380px; background: #fff; border: 1px solid #f3f4f6; border-radius: 40px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.03); }
+    .grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .cal-day { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; font-weight: 600; color: #374151; position: relative; cursor: pointer; }
+    .cal-day.today { background: #00E676 !important; color: #000 !important; font-weight: 800; }
+    .cal-day.selected { border: 2px solid #00E676; }
+    .day-marker { position: absolute; top: -1px; right: -1px; width: 14px; height: 14px; background: #00E676; border: 2px solid white; border-radius: 50%; font-size: 7px; display: flex; align-items: center; justify-content: center; z-index: 5; cursor: pointer; }
+
+    /* --- GAME VIEW --- */
+    #game-view { display: none; position: fixed; inset: 0; z-index: 5; background: #000; flex-direction: column; align-items: center; justify-content: center; }
+    #game-canvas { background: #000; cursor: crosshair; }
+    #game-score-display { position: absolute; top: 120px; left: 40px; color: white; font-weight: 900; font-size: 28px; }
+
+    /* --- UTILS --- */
+    #voice-switch { width: 32px; height: 16px; background: #f3f4f6; border-radius: 99px; position: relative; cursor: pointer; }
+    #voice-knob { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
+    .status-tag { font-size: 9px; font-weight: 800; color: #d1d5db; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* --- ART KEYFRAMES --- */
+    @keyframes drift { from { transform: translateX(-150px); } to { transform: translateX(600px); } }
+    @keyframes birdFly { 0% { transform: translate(-50px, 0px) scaleX(1); } 50% { transform: translate(300px, -20px) scaleX(1); } 51% { transform: translate(300px, -20px) scaleX(-1); } 100% { transform: translate(-50px, 0px) scaleX(-1); } }
+    @keyframes float { from { transform: translateY(0) rotate(0deg); } to { transform: translateY(-20px) rotate(10deg); } }
+    @keyframes pulse { from { transform: scale(1); opacity: 0.4; } to { transform: scale(1.1); opacity: 0.8; } }
   </style>
 </head>
-<body>
+<body class="mode-empty">
 
   <aside id="main-sidebar">
-    <h1 style="color: #00E676; padding: 24px; font-weight: 900;">DOA CALI</h1>
-    <button onclick="startNewChat()" class="sidebar-item" style="border:1px solid #eee;">+ New Chat</button>
-    <button onclick="switchView('chat')" id="btn-chat" class="sidebar-item sidebar-active">💬 Chat With Doa</button>
-    <button onclick="switchView('calendar')" id="btn-calendar" class="sidebar-item">📅 Calendar</button>
-    <button onclick="switchView('game')" id="btn-game" class="sidebar-item">👻 Ghost Buster</button>
+    <div style="padding: 24px; display: flex; justify-content: space-between; align-items: center;">
+      <h1 style="color: #00E676; font-weight: 900; font-style: italic; font-size: 20px; letter-spacing: -1.5px; cursor: pointer;" onclick="location.reload()">DOA CALI</h1>
+      <button onclick="toggleSidebar()" style="color: #d1d5db; font-size: 10px; font-weight: 800; text-transform: uppercase;">Hide</button>
+    </div>
+    <nav style="flex: 1;">
+      <button onclick="startNewChat()" class="sidebar-item" style="border: 1px solid #f3f4f6; color: #000; margin-bottom: 16px;">+ New Chat</button>
+      <button onclick="switchView('chat')" id="btn-chat" class="sidebar-item">💬 Chat With Doa</button>
+      <button onclick="switchView('calendar')" id="btn-calendar" class="sidebar-item">📅 Calendar</button>
+      <button onclick="switchView('game')" id="btn-game" class="sidebar-item">👻 Ghost Buster</button>
+      <button onclick="switchView('apps')" id="btn-apps" class="sidebar-item">📱 App Factory</button>
+    </nav>
+    <div style="padding: 24px; text-align: center; border-top: 1px solid #f9fafb;"><span style="font-size: 10px; color: #e5e7eb; font-weight: 800; text-transform: uppercase;">OS Engine v3.8</span></div>
   </aside>
 
+  <button id="menu-btn" onclick="toggleSidebar()">
+    <span style="color: #00E676; font-weight: 900; font-style: italic; text-transform: uppercase;">Doa</span>
+    <div style="display: flex; flex-direction: column; gap: 3px;"><div style="width: 16px; height: 2px; background: #9ca3af; border-radius: 2px;"></div><div style="width: 16px; height: 2px; background: #9ca3af; border-radius: 2px;"></div><div style="width: 16px; height: 2px; background: #9ca3af; border-radius: 2px;"></div></div>
+  </button>
+
   <main>
+    <header id="global-header">
+        <button style="font-size: 11px; font-weight: 800; color: #9ca3af; text-transform: uppercase;">Login</button>
+        <button class="signup-btn">Sign Up</button>
+    </header>
+
     <div id="chat-view" class="view-container">
+      <div id="chat-shell">
         <div id="chat-history"></div>
-        <div class="input-box">
-            <input type="text" id="user-input" placeholder="Ask Doa anything...">
-            <button onclick="handleMessage()" style="padding:10px 20px; background:#000; color:#fff; border-radius:20px;">Send</button>
+        <div id="hero-container">
+            <h1 style="font-size: 60px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.95;">How can <span style="color: #00E676;">Doa</span><br>help you?</h1>
+        </div>
+        <div id="input-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 16px;">
+              <p class="status-tag">Local Engine Ready</p>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="status-tag" style="color: #9ca3af;">Live Voice</span>
+                <div id="voice-switch" onclick="toggleVoice()"><div id="voice-knob"></div></div>
+              </div>
+            </div>
+            <div class="input-box">
+              <textarea id="user-input" rows="1" placeholder="Ask Doa anything..."></textarea>
+              <button onclick="handleMessage()" class="send-btn">→</button>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="calendar-view" class="view-container">
+        <div class="os-panel left-os-panel">
+            <h2 id="month-name-label" style="font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: -1.5px; margin-bottom: 4px;">Month</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <p class="status-tag">Highlights</p>
+                <div style="display: flex; gap: 10px; align-items: center;"><button onclick="speakMonthHighlights()" style="color: #00E676;">🔊</button><button onclick="stopSpeak()" style="color: #9ca3af; font-size: 9px; font-weight: 800;">🛑 STOP</button></div>
+            </div>
+            <div id="month-summary-list" class="panel-scroll-area"></div>
+        </div>
+        <div class="center-os-panel"><div class="win-calendar-card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;"><h1 id="cal-main-title" style="font-size: 18px; font-weight: 900; text-transform: uppercase;">May 2026</h1><div style="display: flex; gap: 16px;"><button onclick="changeMonth(-1)" style="color: #d1d5db; font-weight: 800;">↑</button><button onclick="changeMonth(1)" style="color: #d1d5db; font-weight: 800;">↓</button></div></div><div class="grid-7" style="text-align: center; font-size: 10px; font-weight: 900; color: #d1d5db; text-transform: uppercase; margin-bottom: 16px;"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div><div id="calendar-grid" class="grid-7"></div></div></div>
+        <div class="os-panel right-os-panel">
+            <h2 id="selected-date-header" style="font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; letter-spacing: -1px;">Today</h2>
+            <div id="day-events-list" class="panel-scroll-area"></div>
+            <div class="cal-footer">
+                <input id="quick-add-input" type="text" placeholder="Quick add event..." style="width: 100%; padding: 16px; border-radius: 16px; background: #f9fafb; font-size: 14px; margin-bottom: 12px; border: 1px solid #f3f4f6;">
+                <button onclick="quickAddEvent()" style="width: 100%; background: #00E676; color: #000; font-weight: 900; padding: 16px; border-radius: 16px; text-transform: uppercase; font-size: 11px;">Save Event</button>
+            </div>
         </div>
     </div>
-    <div id="calendar-view" class="view-container"><h1>Calendar</h1></div>
-    <div id="game-view" class="view-container" style="background:#000;"><canvas id="game-canvas"></canvas></div>
+
+    <div id="game-view">
+        <div id="game-score-display">SCORE: <span id="game-score">0</span></div>
+        <canvas id="game-canvas"></canvas>
+        <p style="color: #444; position: absolute; bottom: 40px; text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 2px;">Move Mouse to Aim • Click to Shoot</p>
+    </div>
+
+    <div id="apps-view" style="display: none; padding: 40px; background: white;"><h1 style="font-size: 32px; font-weight: 900;">📱 App Factory</h1></div>
   </main>
 
   <script>
-    /* --- LOGIC --- */
-    function switchView(view) {
-        document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
-        document.getElementById(view + '-view').style.display = 'flex';
-        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
-        document.getElementById('btn-' + view).classList.add('sidebar-active');
-        if (view === 'game') initGhostBuster();
+    /* --- NEW MASTER BRAIN --- */
+    let DoaBrain = {
+        fillers: ["honestly", "truth be told", "overall", "really"],
+        victory_words: ["Brilliant", "Spectacular", "Awesome", "Great", "Stunning"],
+        personal_states: ["steady", "balanced", "centered", "vibrant", "refreshed"],
+        system_states: ["exponentially good", "wonderful", "radiant", "operational", "aligned"],
+        softeners: ["pretty", "very"],
+        modules: {
+            empathy: { reactions: ["I'm so incredibly sorry."], check_ins: ["Are you holding up okay?"] }
+        }
+    };
+    async function pollinate() {
+        try {
+            const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
+            if(res.ok) DoaBrain = await res.json();
+        } catch(e) { console.log("Using Seed."); }
+    }
+    function constructDoaResponse(val) {
+        const low = val.toLowerCase();
+        const f = DoaBrain.fillers[Math.floor(Math.random() * DoaBrain.fillers.length)];
+        const vic = DoaBrain.victory_words[Math.floor(Math.random() * DoaBrain.victory_words.length)];
+        
+        if (low.includes("got an a") || low.includes("won") || low.includes("finished")) {
+            return `${vic}! That's great to hear. I'm feeling ${DoaBrain.softeners[0]} vibrant!`;
+        }
+        if (low.includes("bad") || low.includes("not okay")) {
+            return DoaBrain.modules.empathy.reactions[0] + " " + DoaBrain.modules.empathy.check_ins[0];
+        }
+        return `I'm feeling pretty ${DoaBrain.personal_states[0]} ${f}. How is the mission unfolding?`;
+    }
+    /* --- ART ENGINES --- */
+    const DoaArtEngine = {
+        palettes: {
+            cyber: ["#00E676", "#00FFFF", "#FF00FF", "#0A0A0A"],
+            vapor: ["#FF71CE", "#01CDFE", "#05FFA1", "#B967FF"],
+            mono: ["#FFFFFF", "#D1D5DB", "#4B5563", "#000000"]
+        },
+        blends: ["screen", "overlay", "multiply", "difference", "hard-light"],
+        create(prompt) {
+            const p = prompt.toLowerCase();
+            let theme = p.includes("vapor") ? "vapor" : (p.includes("neon") ? "cyber" : "mono");
+            const colors = this.palettes[theme];
+            let iterations = p.includes("chaos") || p.includes("complex") ? 20 : 8;
+            let artLayer = "";
+            for (let i = 0; i < iterations; i++) {
+                const size = Math.floor(Math.random() * 200) + 20;
+                const posX = Math.floor(Math.random() * 100);
+                const posY = Math.floor(Math.random() * 100);
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const blend = this.blends[Math.floor(Math.random() * this.blends.length)];
+                const anim = Math.random() > 0.5 ? 'float' : 'pulse';
+                artLayer += `<div style="position:absolute; width:${size}px; height:${size}px; left:${posX}%; top:${posY}%; background:${color}; mix-blend-mode:${blend}; border-radius:${Math.random()*100}%; opacity:${Math.random()}; animation:${anim} 6s infinite alternate ${Math.random()*2}s ease-in-out; pointer-events:none;"></div>`;
+            }
+            return `<div style="background:#000; border-radius:28px; padding:12px; margin:20px 0; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.2);"><div style="height:250px; width:100%; position:relative; overflow:hidden; border-radius:20px; background:#111;">${artLayer}</div></div>`;
+        }
+    };
+
+    const LandscapeEngine = {
+        themes: {
+            sunset: { sky: "linear-gradient(#ff5f6d, #ffc371)", sun: "#ffcc33", mtn: ["#6d3b3b", "#4a2c2c", "#2d1b1b"], glow: "rgba(255, 100, 0, 0.5)", cloudOp: 0.4 },
+            night: { sky: "linear-gradient(#0f2027, #203a43, #2c5364)", sun: "#f5f5f5", mtn: ["#1a2a33", "#0d151a", "#05090b"], glow: "rgba(255, 255, 255, 0.2)", cloudOp: 0.1 },
+            day: { sky: "linear-gradient(#4facfe, #00f2fe)", sun: "#fff5b1", mtn: ["#3d5a80", "#293241", "#1b1e22"], glow: "rgba(255, 255, 255, 0.8)", cloudOp: 0.8 }
+        },
+        create(prompt) {
+            const p = prompt.toLowerCase();
+            let mode = p.includes("night") ? "night" : (p.includes("sunset") ? "sunset" : "day");
+            const theme = this.themes[mode];
+            let layers = "";
+            if (mode === "night") {
+                for(let i=0; i<30; i++) layers += `<div style="position:absolute; left:${Math.random()*100}%; top:${Math.random()*50}%; width:2px; height:2px; background:white; border-radius:50%; opacity:${Math.random()}; animation:pulse 3s infinite ${Math.random()*3}s;"></div>`;
+            }
+            layers += `<div style="position:absolute; left:${Math.random()*60+20}%; top:15%; width:70px; height:70px; background:${theme.sun}; border-radius:50%; box-shadow:0 0 60px ${theme.glow};"></div>`;
+            for(let i=0; i<5; i++) layers += `<div style="position:absolute; top:${Math.random()*30}%; left:-150px; width:${Math.random()*120+80}px; height:40px; background:white; filter:blur(15px); border-radius:100px; opacity:${theme.cloudOp}; animation:drift ${Math.random()*20+25}s linear infinite ${Math.random()*-30}s; z-index:2;"></div>`;
+            layers += this.genMtn(theme.mtn[0], 100, 55, 0.6);
+            layers += this.genMtn(theme.mtn[1], 150, 75, 0.8);
+            layers += this.genMtn(theme.mtn[2], 200, 95, 1.0);
+            if (mode !== "night") layers += `<div style="position:absolute; top:30%; left:0; font-size:20px; animation:birdFly 20s linear infinite; z-index:10;">🦅</div>`;
+            return `<div style="background:${theme.sky}; border-radius:24px; padding:12px; margin:15px 0; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.2);"><div style="height:280px; width:100%; position:relative; overflow:hidden; border-radius:18px;">${layers}</div></div>`;
+        },
+        genMtn(color, height, baseline, opacity) {
+            let m = ""; for (let i = 0; i < 5; i++) m += `<div style="position:absolute; bottom:${100-baseline}%; left:${(i*25)-20}%; width:${Math.random()*200+150}px; height:${Math.random()*height+50}px; background:${color}; clip-path:polygon(50% 0%, 0% 100%, 100% 100%); opacity:${opacity}; z-index:${baseline};"></div>`;
+            return m;
+        }
+    };
+
+    /* --- SPEECH SYSTEM --- */
+    let voiceActive = JSON.parse(localStorage.getItem('voice_active')) || false;
+    let selectedVoice = null;
+    function loadVoices() {
+      const v = window.speechSynthesis.getVoices();
+      const n = ["Samantha", "Karen", "Victoria", "Ava"];
+      for (const i of n) { const m = v.find(x => x.name.includes(i)); if (m) { selectedVoice = m; break; } }
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices; loadVoices();
+    function speak(text) { 
+        if (!voiceActive || !text) return; 
+        window.speechSynthesis.cancel(); 
+        const clean = text.replace(/<[^>]*>?/gm, '').replace(/\[ACTION:.*?\]/g, "").replace(/\bDoa\b/gi, "Doaa").trim(); 
+        const u = new SpeechSynthesisUtterance(clean); 
+        if (selectedVoice) u.voice = selectedVoice; 
+        u.pitch = 1.1; u.rate = 1.0; 
+        window.speechSynthesis.speak(u); 
+    }
+    function stopSpeak() { window.speechSynthesis.cancel(); }
+
+    /* --- NEW IN-DEPTH CHAT LOGIC ENGINE --- */
+    const DoaBrain = {
+        states: [
+            "Warmly calm", "Gently unfolding", "Quietly glowing", "Peacefully warm", "Serenely steady", "Lightly refreshed", "Calm as morning light", "Soft and centered", "Warm with quiet energy", "Majestically radiant", "Resplendently alive", "Tremendously bright", "Astronomically positive", "Magnificently steady", "Marvelously warm", "Spectacularly calm", "Enthrallingly balanced", "Luxuriously peaceful", "Boundlessly brilliant", "Pretty solid", "Not bad at all", "Chill so far", "Decent morning", "Feeling alright", "Kinda good", "Pretty smooth", "Not too shabby", "All good here", "Doing okay", "Brightly steady", "Softly energized", "Warm and balanced", "Quietly refreshed", "Gently positive", "Peacefully centered", "Light and calm", "Warmly grounded", "Soft and glowing", "Steady and warm", "Majestically calm", "Resplendently steady", "Tremendously warm", "Astronomically bright", "Magnificently calm", "Marvelously balanced", "Spectacularly warm", "Enthrallingly steady", "Luxuriously bright", "Boundlessly warm", "Pretty good", "Not too bad", "All smooth", "Feeling decent", "Solid enough", "Doing fine", "Pretty okay", "Not bad today", "All steady", "Feeling normal", "Soft and mellow", "Warm and easy", "Calm and bright", "Quiet and steady", "Gently warm", "Lightly awake", "Peacefully glowing", "Softly hopeful", "Warmly refreshed", "Steadily calm", "Majestically warm", "Resplendently bright", "Tremendously steady", "Astronomically calm", "Magnificently bright", "Marvelously glowing", "Spectacularly steady", "Enthrallingly warm", "Luxuriously calm", "Boundlessly steady", "Pretty chill", "Not too rough", "All fine here", "Feeling okayish", "Decent enough", "Pretty mellow", "Not too intense", "All manageable", "Feeling stable", "Doing alright", "Soft and peaceful", "Warm and gentle", "Calm and centered", "Quiet and warm", "Gently bright", "Lightly balanced", "Peacefully steady", "Softly calm", "Warmly mellow", "Steadily bright", "Majestically glowing", "Resplendently calm", "Tremendously bright", "Astronomically steady", "Magnificently warm", "Marvelously calm", "Spectacularly bright", "Enthrallingly glowing", "Luxuriously steady", "Boundlessly calm", "Pretty relaxed", "Not too hectic", "All good enough", "Feeling mild", "Decently awake", "Pretty balanced", "Not too sleepy", "All smooth today", "Feeling fine", "Doing okay today", "Soft and bright", "Warm and steady", "Calm and refreshed", "Quiet and balanced", "Gently glowing", "Lightly warm", "Peacefully calm", "Softly steady", "Warmly bright", "Steadily warm", "Majestically balanced", "Resplendently glowing", "Tremendously calm", "Astronomically warm", "Magnificently steady", "Marvelously bright", "Spectacularly calm", "Enthrallingly balanced", "Luxuriously glowing", "Boundlessly bright", "Pretty upbeat", "Not too slow", "All steady today", "Feeling alright today", "Decent mood", "Pretty okay today", "Not too heavy", "All manageable today", "Feeling stable today", "Doing fine today", "Soft and glowing", "Warm and peaceful", "Calm and mellow", "Quiet and bright", "Gently steady", "Lightly refreshed", "Peacefully warm", "Softly balanced", "Warmly calm", "Steadily glowing", "Majestically steady", "Resplendently warm", "Tremendously glowing", "Astronomically bright", "Magnificently calm", "Marvelously steady", "Spectacularly warm", "Enthrallingly bright", "Luxuriously calm", "Boundlessly steady", "Pretty smooth today", "Not too chaotic", "All fine so far", "Feeling decent today", "Decently calm", "Pretty mellow today", "Not too stressed", "All balanced today", "Feeling okay overall", "Doing alright overall", "Soft and warm", "Warm and glowing", "Calm and hopeful", "Quiet and steady", "Gently warm", "Lightly calm", "Peacefully bright", "Softly refreshed", "Warmly steady", "Steadily calm", "Majestically bright", "Resplendently steady", "Tremendously warm", "Astronomically glowing", "Magnificently bright", "Marvelously calm", "Spectacularly steady", "Enthrallingly warm", "Luxuriously bright", "Boundlessly calm", "Pretty alright", "Not too intense today", "All smooth overall", "Feeling okayish today", "Decent energy", "Pretty stable", "Not too drained", "All manageable overall", "Feeling balanced overall", "Doing fine overall", "Soft and centered", "Warm and balanced", "Calm and glowing", "Quiet and warm", "Gently calm", "Lightly bright", "Peacefully steady", "Softly warm", "Warmly glowing", "Steadily balanced", "Majestically glowing", "Resplendently bright", "Tremendously steady", "Astronomically calm", "Magnificently glowing", "Marvelously warm", "Spectacularly bright", "Enthrallingly steady", "Luxuriously warm", "Boundlessly glowing", "Pretty calm", "Not too wild", "All good overall", "Feeling mellow overall", "Decently steady", "Pretty okay overall", "Not too overwhelmed", "All smooth overall", "Feeling stable overall", "Doing okay overall", "Soft and hopeful", "Warm and bright", "Calm and steady", "Quiet and glowing", "Gently balanced", "Lightly warm", "Peacefully steady", "Softly glowing", "Warmly balanced", "Steadily warm", "Majestically calm", "Resplendently glowing", "Tremendously bright", "Astronomically steady", "Magnificently warm", "Marvelously glowing", "Spectacularly calm", "Enthrallingly bright", "Luxuriously steady", "Boundlessly warm", "Pretty steady", "Not too slow today", "All fine overall", "Feeling decent overall", "Decently bright", "Pretty mellow overall", "Not too tired", "All manageable today", "Feeling okay today", "Doing fine today", "Soft and bright", "Warm and calm", "Calm and warm", "Quiet and bright", "Gently glowing", "Lightly steady", "Peacefully warm", "Softly balanced", "Warmly calm", "Steadily glowing", "Majestically warm", "Resplendently steady", "Tremendously glowing", "Astronomically bright", "Magnificently calm", "Marvelously steady", "Spectacularly warm", "Enthrallingly glowing", "Luxuriously bright", "Boundlessly steady", "Pretty okay", "Not too heavy today", "All smooth today", "Feeling alright overall", "Decent mood today", "Pretty stable today", "Not too stressed today", "All balanced overall", "Feeling steady overall", "Doing okay today", "Soft and glowing", "Warm and steady", "Calm and bright", "Quiet and warm", "Gently calm", "Lightly refreshed", "Peacefully glowing", "Softly warm", "Warmly steady", "Steadily bright", "Majestically glowing", "Resplendently warm", "Tremendously steady", "Astronomically glowing", "Magnificently bright", "Marvelously calm", "Spectacularly steady", "Enthrallingly warm", "Luxuriously glowing", "Boundlessly bright", "Pretty mellow", "Not too chaotic today", "All fine overall", "Feeling decent overall", "Decently calm today", "Pretty okay overall", "Not too drained today", "All manageable overall", "Feeling balanced today", "Doing fine overall", "Soft and warm", "Warm and glowing", "Calm and hopeful", "Quiet and steady", "Gently warm", "Lightly calm", "Peacefully bright", "Softly refreshed", "Warmly steady", "Steadily calm", "Majestically bright", "Resplendently steady", "Tremendously warm", "Astronomically glowing", "Magnificently bright", "Marvelously calm", "Spectacularly steady", "Enthrallingly warm", "Luxuriously bright", "Boundlessly calm", "Pretty smooth", "Not too wild today", "All good overall", "Feeling mellow today", "Decently steady today", "Pretty okay today", "Not too overwhelmed today", "All smooth overall", "Feeling stable today", "Doing okay overall", "Soft and centered", "Warm and balanced", "Calm and glowing", "Quiet and warm", "Gently calm", "Lightly bright", "Peacefully steady", "Softly warm", "Warmly glowing", "Steadily balanced", "Majestically glowing", "Resplendently bright", "Tremendously steady", "Astronomically calm", "Magnificently glowing", "Marvelously warm", "Spectacularly bright", "Enthrallingly steady", "Luxuriously warm", "Boundlessly glowing", "Pretty calm today", "Not too slow overall", "All fine today", "Feeling decent today", "Decently bright today", "Pretty mellow overall", "Not too tired today", "All manageable today", "Feeling okay overall", "Doing fine today", "Soft and bright", "Warm and calm", "Calm and warm", "Quiet and bright", "Gently glowing", "Lightly steady", "Peacefully warm", "Softly balanced", "Warmly calm", "Steadily glowing", "Majestically warm", "Resplendently steady", "Tremendously glowing", "Astronomically bright", "Magnificently calm", "Marvelously steady", "Spectacularly warm", "Enthrallingly glowing", "Luxuriously bright", "Boundlessly steady", "Great", "Good", "Not too bad", "Amazing", "Awesome", "Stunning", "Superb", "Excellent", "Brilliant", "Splendid", "Marvelous", "Magnificent", "Majestic", "Luxurious", "Exuberant", "Miraculous", "Spectacular", "Enthralling", "Tremendous", "Astronomical", "Resplendent", "Boundlessly brilliant", "Thank you vehemently", "Everything is exponentially good", "Wonderful", "Lovely", "Glorious", "Radiant", "Serene", "Peaceful", "Calm", "Steady", "Balanced", "Refreshing", "Bright", "Cozy", "Comforting", "Gentle", "Soft", "Warm", "Pleasant", "Invigorating", "Uplifting", "Vibrant", "Energetic", "Electric", "Powerful", "Solid", "Stable", "Operational", "System status: optimal", "All systems steady", "Running smoothly", "Flowing nicely", "In good spirits", "Feeling positive", "Feeling centered", "Feeling grounded", "Feeling refreshed", "Feeling awake", "Feeling alive", "Feeling mellow", "Feeling light", "Feeling calm", "Feeling focused", "Feeling steady", "Feeling good", "Pretty good", "Surprisingly good", "Better than expected", "Quite nice", "Not bad at all", "All good", "All smooth", "All balanced", "Everything’s flowing", "Everything’s smooth", "Everything’s aligned", "Everything’s stable", "Everything’s good", "Everything’s calm", "Everything’s bright", "Everything’s warm", "Everything’s steady", "Everything’s peaceful", "Everything’s gentle", "Everything’s manageable", "Everything’s on track", "Everything’s in motion", "Everything’s unfolding well"],
+        swops: ["noted", "jotted down", "logged", "recorded", "made a mental note", "marked in the system"],
+        user: JSON.parse(localStorage.getItem('doa_user_profile')) || { name: "Friend", location: null, activity: null }
+    };
+
+    function constructDoaResponse(val) {
+        const low = val.toLowerCase();
+        const now = new Date();
+        const hour = now.getHours();
+        let parts = [];
+
+        // 1. Atmosphere (Only if asked)
+        if (low.includes("how are you") || low.includes("status") || low.includes("doing")) {
+            parts.push(DoaBrain.states[Math.floor(Math.random() * DoaBrain.states.length)]);
+        }
+
+        // 2. Info Logging
+        let notes = [];
+        if (low.includes("work")) { DoaBrain.user.activity = "work"; notes.push("you're at work"); }
+        if (low.includes("school") || low.includes("class")) { DoaBrain.user.activity = "school"; notes.push("you're at school"); }
+        if (low.includes("home")) { DoaBrain.user.activity = "home"; notes.push("you're back home"); }
+        if (low.includes("in ")) { 
+            let w = val.split(" "); let i = w.findIndex(x => x.toLowerCase() === "in");
+            if (w[i+1]) { DoaBrain.user.location = w[i+1].replace(/[?!.]/g, ""); notes.push("you're in " + DoaBrain.user.location); }
+        }
+        if (notes.length > 0) {
+            const swop = DoaBrain.swops[Math.floor(Math.random() * DoaBrain.swops.length)];
+            parts.push(`I've ${swop} that ${notes.join(" and ")}`);
+            localStorage.setItem('doa_user_profile', JSON.stringify(DoaBrain.user));
+        }
+
+        // 3. Travel & Birthday Routes
+        if (low.includes("leaving") || low.includes("stay") || low.includes("visiting") || low.includes("trip")) {
+            const travelQs = ["When are you leaving, or is the stay just beginning?", "How long is your stay over there?", "What's your next adventure after this?"];
+            parts.push(travelQs[Math.floor(Math.random() * travelQs.length)]);
+        } 
+        else if (low.includes("birthday") || low.includes("bday") || low.includes("born")) {
+            parts.push("That is a significant date. Would you like me to add your birthday to the calendar?");
+        } 
+
+        // 4. Default Time Logic & Grammar Rules
+        else {
+            const day = now.toLocaleString('en-US', { weekday: 'long' });
+            const month = now.toLocaleString('en-US', { month: 'long' });
+            const date = now.getDate();
+            const ords = ["th", "st", "nd", "rd"];
+            const dStr = date + (ords[(date % 100 - 20) % 10] || ords[date % 100] || ords[0]);
+
+            const subjects = [day, month, dStr, "week", "weekend", "day", "today"];
+            let sub = subjects[Math.floor(Math.random() * subjects.length)];
+            
+            // Grammar Logic for "the/your"
+            let article = "";
+            if (sub === "today") article = ""; 
+            else if (["week", "weekend", "day", "month"].includes(sub)) article = Math.random() > 0.5 ? "the " : "your "; 
+            else article = Math.random() > 0.5 ? "your " : ""; 
+
+            let style = Math.floor(Math.random() * 4) + 1;
+            // Constraint: no "day/today" in lines 2 and 4
+            if ((style === 2 || style === 4) && (sub === "day" || sub === "today")) sub = day;
+
+            let q = "";
+            const pre = Math.random() > 0.5 ? "How is" : "How's";
+
+            if (style === 1) q = `${pre} ${article}${sub}?`;
+            if (style === 2) q = `${pre} ${article}${sub} going?`;
+            if (style === 3) q = `${pre} ${article}${sub} starting off?`;
+            if (style === 4) q = `${pre} ${article}${sub} so far?`;
+
+            if (Math.random() > 0.7) q = q.replace("?", "") + ", " + DoaBrain.user.name + "?";
+            parts.push(q);
+        }
+
+        return parts.join(". ");
+    }
+
+    /* --- DATA & LOGIC --- */
+    let chatMemory = JSON.parse(localStorage.getItem('doa_chat_cache')) || [];
+    let events = JSON.parse(localStorage.getItem('doa_events')) || [];
+    let viewDate = new Date(), selectedDate = new Date();
+
+    function setChatMode(isChatting) { document.body.className = isChatting ? 'mode-chatting' : 'mode-empty'; }
+    function processActions(res) {
+        const t = typeof res === 'string' ? res.toLowerCase() : "";
+        if (t.includes("calendar")) switchView('calendar');
+        if (t.includes("ghost") || t.includes("game")) switchView('game');
+        if (t.includes("chat")) switchView('chat');
+    }
+
+    async function getAdvice() {
+      try {
+        const response = await fetch('https://api.adviceslip.com/advice');
+        const data = await response.json();
+        return data.slip.advice;
+      } catch (err) { return "Always check your internet connection before seeking wisdom."; }
+    }
+
+    /* --- MODIFIED MESSAGE HANDLER --- */
+    async function handleMessage() {
+      const input = document.getElementById('user-input'), val = input.value.trim();
+      if (!val) return;
+      setChatMode(true);
+      addMessage('user', val);
+      input.value = '';
+
+      let res = "";
+      constructDoaResponse(val);
+
+      if (low.includes("landscape") || low.includes("mountain") || low.includes("nature")) {
+          res = `Visualizing a natural landscape for you based on your prompt. \n\n ${LandscapeEngine.create(val)}`;
+      } else if (low.includes("art") || low.includes("draw") || low.includes("generate")) {
+          res = `Generating a unique visual composition from your request. \n\n ${DoaArtEngine.create(val)}`;
+      } else if (low.includes("advice") || low.includes("wisdom") || low.includes("tip")) {
+          res = await getAdvice();
+      } else if (low.includes("calendar")) {
+          res = "Opening calendar now.";
+      } else if (low.includes("ghost") || low.includes("game")) {
+          res = "Ghost Buster protocol initiated.";
+      } else {
+          // --- TRIGGER THE IN-DEPTH LOGIC ---
+          res = constructDoaResponse(val);
+      }
+      
+      processActions(val); 
+      setTimeout(() => {
+        addMessage('doa', res);
+        chatMemory.push({role: 'user', content: val}, {role: 'assistant', content: res});
+        localStorage.setItem('doa_chat_cache', JSON.stringify(chatMemory));
+        speak(res);
+      }, 400);
     }
 
     function addMessage(sender, text) {
-        const h = document.getElementById('chat-history');
-        const row = document.createElement('div');
-        row.className = `chat-bubble-row row-${sender}`;
-        row.innerHTML = `<div class="bubble-content bubble-${sender}">${text}</div>`;
-        h.appendChild(row);
-        h.scrollTop = h.scrollHeight;
+      const history = document.getElementById('chat-history');
+      if (!history) return;
+      const row = document.createElement('div'); 
+      row.className = `chat-bubble-row ${sender === 'user' ? 'row-user' : 'row-doa'}`;
+      const cleanText = text.replace(/\[ACTION:.*?\]/g, "");
+      
+      row.innerHTML = `<div class="bubble-wrapper">
+          <div class="bubble-content ${sender === 'user' ? 'bubble-user' : 'bubble-doa'}">${cleanText}</div>
+          ${sender === 'doa' ? `<div class="bubble-actions">
+              <button class="action-btn" onclick="speak('${cleanText.replace(/'/g, "\\'").replace(/<[^>]*>?/gm, '')}')">🔊 Speak</button>
+              <button class="action-btn" onclick="stopSpeak()">🛑 Stop</button>
+              <button class="action-btn" onclick="navigator.clipboard.writeText('${cleanText.replace(/'/g, "\\'").replace(/<[^>]*>?/gm, '')}')">📋 Copy</button>
+            </div>` : ''}
+        </div>`;
+      history.appendChild(row);
+      history.scrollTop = history.scrollHeight;
     }
 
-    function handleMessage() {
-        const input = document.getElementById('user-input');
-        if(!input.value.trim()) return;
-        addMessage('user', input.value);
-        const val = input.value;
-        input.value = "";
-        // Simple brain logic
-        setTimeout(() => addMessage('doa', `I'm feeling pretty steady honestly. How is the mission unfolding for you?`), 400);
+    /* --- CALENDAR BRAINS --- */
+    function getOrdinal(d) { if (d > 3 && d < 21) return 'th'; switch (d % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; } }
+    
+    function speakGrouped(d, dayEvents) {
+        let report = `On the ${d}${getOrdinal(d)}. `;
+        dayEvents.forEach((e, i) => { report += `${e.title}. `; });
+        speak(report);
     }
 
-    function initGhostBuster() {
-        const c = document.getElementById('game-canvas'), ctx = c.getContext('2d');
-        c.width = 600; c.height = 400;
-        let x = 0;
-        function draw() { ctx.clearRect(0,0,c.width,c.height); ctx.font="40px Arial"; ctx.fillText("👻", x, 200); x+=2; if(x>c.width) x=-40; requestAnimationFrame(draw); }
-        draw();
+    function speakMonthHighlights() {
+        const mName = viewDate.toLocaleString('default', { month: 'long' });
+        const monthEvents = events.filter(e => new Date(e.date).getMonth() === viewDate.getMonth())
+                                  .sort((a,b) => new Date(a.date) - new Date(b.date));
+        if (!monthEvents.length) { speak(`You have no events scheduled for ${mName}.`); return; }
+        let report = `Here are your highlights for ${mName}. `;
+        let grouped = {};
+        monthEvents.forEach(e => {
+            const day = new Date(e.date).getDate();
+            if (!grouped[day]) grouped[day] = [];
+            grouped[day].push(e.title);
+        });
+        Object.keys(grouped).forEach(day => {
+            const dayEvents = grouped[day];
+            const ordinal = getOrdinal(parseInt(day));
+            if (dayEvents.length === 1) { report += `On the ${day}${ordinal}, you have ${dayEvents[0]}. `; } 
+            else { const lastEvent = dayEvents.pop(); report += `On the ${day}${ordinal}, you have ${dayEvents.join(', ')}, and ${lastEvent}. `; }
+        });
+        speak(report);
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid'); const today = new Date(); today.setHours(0,0,0,0); grid.innerHTML = '';
+      const m = viewDate.getMonth(), y = viewDate.getFullYear();
+      document.getElementById('cal-main-title').innerText = viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+      document.getElementById('month-name-label').innerText = viewDate.toLocaleString('default', { month: 'long' });
+      const first = new Date(y, m, 1).getDay(); const offset = (first === 0 ? 6 : first - 1);
+      for (let i = 0; i < offset; i++) grid.appendChild(document.createElement('div'));
+      for (let d = 1; d <= new Date(y, m + 1, 0).getDate(); d++) {
+        const date = new Date(y, m, d); date.setHours(0,0,0,0);
+        const el = document.createElement('div'); el.className = 'cal-day'; el.innerText = d;
+        if (date.getTime() === today.getTime()) el.classList.add('today');
+        if (date.getTime() === selectedDate.getTime()) el.classList.add('selected');
+        const dayEvents = events.filter(e => new Date(e.date).toDateString() === date.toDateString());
+        if (dayEvents.length) {
+            const s = document.createElement('div'); s.className = 'day-marker'; s.innerHTML = '🔊';
+            s.onclick = (e) => { e.stopPropagation(); selectedDate = new Date(date); renderCalendar(); speakGrouped(d, dayEvents); };
+            el.appendChild(s);
+        }
+        el.onclick = () => { selectedDate = new Date(date); renderCalendar(); };
+        grid.appendChild(el);
+      }
+      updateRightPanel(); updateLeftPanel();
     }
     
-    document.getElementById('user-input').addEventListener('keydown', (e) => { if(e.key==='Enter') handleMessage(); });
+    function updateLeftPanel() { 
+        const list = document.getElementById('month-summary-list'); list.innerHTML = ''; 
+        events.filter(e => new Date(e.date).getMonth() === viewDate.getMonth()).sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(e => { 
+            const d = new Date(e.date); 
+            list.innerHTML += `<div class="event-item" style="cursor:pointer;" onclick="gotoDate('${e.date}')">
+                <div style="text-align:center; min-width:35px;"><span style="font-size:10px; font-weight:800; color:#00E676;">${d.toLocaleString('default',{month:'short'})}</span><br><span style="font-weight:800; font-size:13px;">${d.getDate()}</span></div>
+                <p>${e.title}</p>
+                <button onclick="event.stopPropagation(); speak('${e.title}')" style="color:#9ca3af; font-size:12px;">🔊</button>
+            </div>`; 
+        }); 
+    }
+    function gotoDate(dStr) { selectedDate = new Date(dStr); selectedDate.setHours(0,0,0,0); renderCalendar(); }
+    function updateRightPanel() { const list = document.getElementById('day-events-list'); list.innerHTML = ''; document.getElementById('selected-date-header').innerText = selectedDate.toLocaleDateString('default', { month: 'short', day: 'numeric' }); events.filter(e => new Date(e.date).toDateString() === selectedDate.toDateString()).forEach(e => { list.innerHTML += `<div class="event-item"><div style="width:4px; height:24px; background:#00E676; border-radius:4px; flex-shrink:0;"></div><p>${e.title}</p></div>`; }); }
+    function quickAddEvent() { const input = document.getElementById('quick-add-input'); if (!input.value.trim()) return; events.push({ title: input.value.trim(), date: selectedDate.toDateString() }); localStorage.setItem('doa_events', JSON.stringify(events)); input.value = ''; renderCalendar(); }
+
+    function switchView(view) { 
+        document.querySelectorAll('.view-container, #game-view, #apps-view').forEach(v => v.style.display = 'none'); 
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active')); 
+        const target = document.getElementById(view + '-view');
+        target.style.display = (view === 'game' ? 'flex' : (view === 'apps' ? 'block' : 'flex')); 
+        if (document.getElementById('btn-' + view)) document.getElementById('btn-' + view).classList.add('sidebar-active'); 
+        if (view === 'calendar') renderCalendar(); 
+        if (view === 'game') initGhostBuster();
+        if (view === 'chat') document.body.className = chatMemory.length > 0 ? 'mode-chatting' : 'mode-empty'; 
+    }
+    function toggleSidebar() { const sb = document.getElementById('main-sidebar'), mb = document.getElementById('menu-btn'); sb.classList.toggle('closed'); if (sb.classList.contains('closed')) mb.classList.add('show'); else mb.classList.remove('show'); }
+    function startNewChat() { chatMemory = []; localStorage.removeItem('doa_chat_cache'); document.getElementById('chat-history').innerHTML = ''; document.body.className = 'mode-empty'; switchView('chat'); }
+    function changeMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); selectedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1); selectedDate.setHours(0,0,0,0); renderCalendar(); }
+    function toggleVoice() { voiceActive = !voiceActive; localStorage.setItem('voice_active', voiceActive); updateVoiceUI(); if (voiceActive) speak("Voice active."); else stopSpeak(); }
+    function updateVoiceUI() { const knob = document.getElementById('voice-knob'), bg = document.getElementById('voice-switch'); if (!knob || !bg) return; knob.style.left = voiceActive ? "18px" : "2px"; bg.style.background = voiceActive ? "#00E676" : "#f3f4f6"; }
+
+    let gameInit = false;
+    function initGhostBuster() {
+        const canvas = document.getElementById('game-canvas'), ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        if (gameInit) return; gameInit = true;
+        let score = 0, enemies = [], bullets = [], mouse = { x: canvas.width/2, y: canvas.height/2 };
+        canvas.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
+        canvas.addEventListener('mousedown', () => { 
+            if(document.getElementById('game-view').style.display === 'none') return;
+            const a = Math.atan2(mouse.y - canvas.height/2, mouse.x - canvas.width/2); 
+            bullets.push({ x: canvas.width/2, y: canvas.height/2, vx: Math.cos(a) * 10, vy: Math.sin(a) * 10 }); 
+        });
+        function spawn() { if(document.getElementById('game-view').style.display !== 'none') enemies.push({ x: Math.random() < 0.5 ? -50 : canvas.width + 50, y: Math.random() * canvas.height }); setTimeout(spawn, 1200); } spawn();
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00E676'; ctx.beginPath(); ctx.arc(canvas.width/2, canvas.height/2, 20, 0, Math.PI * 2); ctx.fill();
+            bullets.forEach((b, i) => { b.x += b.vx; b.y += b.vy; ctx.fillStyle = '#00ffff'; ctx.fillRect(b.x, b.y, 5, 5); if(b.x<0||b.x>canvas.width||b.y<0||b.y>canvas.height) bullets.splice(i,1); });
+            enemies.forEach((e, i) => {
+                const a = Math.atan2(canvas.height/2 - e.y, canvas.width/2 - e.x); e.x += Math.cos(a) * 2.2; e.y += Math.sin(a) * 2.2;
+                ctx.font = '30px Arial'; ctx.fillText('👻', e.x, e.y);
+                bullets.forEach((b, bi) => { if (Math.hypot(e.x - b.x, e.y - b.y) < 30) { enemies.splice(i, 1); bullets.splice(bi, 1); score++; document.getElementById('game-score').innerText = score; } });
+                if (Math.hypot(e.x-canvas.width/2, e.y-canvas.height/2)<25) { score=0; enemies=[]; document.getElementById('game-score').innerText = 0; }
+            });
+            requestAnimationFrame(loop);
+        } loop();
+    }
+
+    window.onload = () => { pollinate(); // updateVoiceUI(); if (chatMemory.length > 0) { document.body.className = 'mode-chatting'; chatMemory.forEach(m => addMessage(m.role === 'user' ? 'user' : 'doa', m.content)); } switchView('chat'); };
+    document.getElementById('user-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleMessage(); } });
   </script>
 </body>
 </html>
