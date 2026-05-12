@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Doa | AI Operating System</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
@@ -223,98 +224,6 @@
   </main>
 
   <script>
-    <script>
-    /* --- 1. THE FEDERATED BRAIN (Master Knowledge) --- */
-    let FederatedBrain = {
-        words: {
-            fillers: ["honestly", "truth be told", "overall", "really"],
-            victory: ["Brilliant", "Spectacular", "Awesome", "Great", "Stunning"],
-            states: ["steady", "balanced", "centered", "right", "clear", "smooth", "good"],
-            empathy: ["I'm so incredibly sorry.", "Man, that is heavy.", "That sounds like a nightmare."],
-            check_ins: ["Are you holding up okay?", "I'm right here with you.", "Sending you some light."],
-            handling_contexts: ["How is the team handling {subject}?", "How are you handling {subject} these days?"]
-        },
-        afinn: { "good": 3, "bad": -3, "amazing": 4, "awful": -5, "won": 4, "fail": -3 },
-        quotes: ["The best way out is always through."],
-        animals: ["wolf", "eagle", "tiger"],
-        
-        async init() {
-            try {
-                const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
-                if (res.ok) {
-                    const data = await res.json();
-                    if(data.fillers) this.words.fillers = data.fillers;
-                    document.getElementById('status-display').innerText = "CLOUD BRAIN ACTIVE";
-                }
-            } catch (e) { document.getElementById('status-display').innerText = "SEED MODE ACTIVE"; }
-        },
-        
-        pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; },
-        scoreSentiment(text) { return 0; } // Placeholder
-    };
-
-    /* --- 2. LOGIC ENGINE --- */
-    function constructDoaResponse(val) {
-        const low = val.toLowerCase();
-        const b = FederatedBrain.words;
-        const f = FederatedBrain.pick(b.fillers);
-        
-        if (low.includes("got an a") || low.includes("won") || low.includes("finished")) {
-            return `${FederatedBrain.pick(b.victory)}! That's great. I'm feeling pretty vibrant hearing that!`;
-        }
-        if (low.includes("bad") || low.includes("not okay")) {
-            return FederatedBrain.pick(b.empathy.reactions) + " " + FederatedBrain.pick(b.empathy.check_ins);
-        }
-        return `I'm feeling pretty ${FederatedBrain.pick(b.states)} ${f}. How is the mission unfolding?`;
-    }
-
-    /* --- 3. UI HANDLERS (Fixing your button issues) --- */
-    function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('closed'); }
-    
-    function switchView(view) {
-        document.querySelectorAll('.view-container, #game-view, #apps-view').forEach(v => v.style.display = 'none');
-        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
-        const target = document.getElementById(view + '-view');
-        if (target) {
-            target.style.display = (view === 'game' ? 'flex' : 'flex');
-            document.getElementById('btn-' + view).classList.add('sidebar-active');
-        }
-        if (view === 'game') initGhostBuster();
-    }
-
-    async function handleMessage() {
-        const input = document.getElementById('user-input');
-        const val = input.value.trim();
-        if (!val) return;
-        
-        // Visual
-        addMessage('user', val);
-        input.value = "";
-        
-        // Logic
-        setTimeout(() => {
-            const res = constructDoaResponse(val);
-            addMessage('doa', res);
-            speak(res);
-        }, 450);
-    }
-
-    function addMessage(sender, text) {
-        const history = document.getElementById('chat-history');
-        const row = document.createElement('div');
-        row.className = `chat-bubble-row row-${sender}`;
-        row.innerHTML = `<div class="bubble-wrapper"><div class="bubble-content bubble-${sender}">${text}</div></div>`;
-        history.appendChild(row);
-        document.body.className = 'mode-chatting';
-        history.scrollTop = history.scrollHeight;
-    }
-
-    // --- INIT ---
-    window.onload = () => {
-        FederatedBrain.init();
-        document.getElementById('user-input').addEventListener('keydown', (e) => { if(e.key==='Enter') handleMessage(); });
-    };
-    
     /* ============================================================
        SEED FALLBACK — used if fetches fail
     ============================================================ */
@@ -386,92 +295,90 @@
        FEDERATED BRAIN — loads external data, falls back to SEED
     ============================================================ */
     const FederatedBrain = {
+      // Start with SEED as the live words object
       words: { ...SEED.words },
       afinn: { ...SEED.afinn },
       quotes: [...SEED.quotes],
       animals: [...SEED.animals],
-      status: "booting",
+
+      pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : ""; },
 
       async init() {
         setStatus("scavenging");
-        const fetches = await Promise.allSettled([
+        const results = await Promise.allSettled([
           this._fetchWords(),
           this._fetchAfinn(),
           this._fetchQuotes(),
           this._fetchAnimals()
         ]);
-        const allOk = fetches.every(f => f.status === "fulfilled");
-        setStatus(allOk ? "optimal" : "optimal"); // still optimal if we have SEED fallback
+        const anyOk = results.some(r => r.status === "fulfilled");
+        setStatus(anyOk ? "optimal" : "optimal"); // SEED guarantees stability either way
       },
 
       async _fetchWords() {
         try {
-          const r = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
-          if (!r.ok) throw new Error("words fetch failed");
-          const d = await r.json();
-          if (d.states) this.words.states = d.states;
-          if (d.victory) this.words.victory = d.victory;
-          if (d.empathy) this.words.empathy = d.empathy;
-          if (d.fillers) this.words.fillers = d.fillers;
-          if (d.swops) this.words.swops = d.swops;
-        } catch (e) {
-          // use SEED silently
-        }
+          const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
+          if (!res.ok) throw new Error("words fetch failed");
+          const d = await res.json();
+          // Merge cloud data on top of SEED — only override keys that exist in the response
+          if (d.states)            this.words.states            = d.states;
+          if (d.victory_words)     this.words.victory_words     = d.victory_words;
+          if (d.personal_states)   this.words.personal_states   = d.personal_states;
+          if (d.victory)           this.words.victory           = d.victory;
+          if (d.empathy)           this.words.empathy           = d.empathy;
+          if (d.fillers)           this.words.fillers           = d.fillers;
+          if (d.swops)             this.words.swops             = d.swops;
+          if (d.handling_contexts) this.words.handling_contexts = d.handling_contexts;
+        } catch (e) { /* silently stay on SEED */ }
       },
 
       async _fetchAfinn() {
         try {
-          const r = await fetch("https://cdn.jsdelivr.net/gh/fnielsen/afinn/afinn-111.json");
-          if (!r.ok) throw new Error("afinn fetch failed");
-          const d = await r.json();
-          this.afinn = { ...this.afinn, ...d };
-        } catch (e) {
-          // use SEED silently
-        }
+          const res = await fetch("https://cdn.jsdelivr.net/gh/fnielsen/afinn/afinn-111.json");
+          if (!res.ok) throw new Error("afinn fetch failed");
+          const d = await res.json();
+          this.afinn = { ...this.afinn, ...d }; // merge, SEED entries are overwritten by the real dataset
+        } catch (e) { /* silently stay on SEED */ }
       },
 
       async _fetchQuotes() {
         try {
-          const r = await fetch("https://cdn.jsdelivr.net/gh/Jameshenry/quotable-json/quotes.json");
-          if (!r.ok) throw new Error("quotes fetch failed");
-          const d = await r.json();
+          const res = await fetch("https://cdn.jsdelivr.net/gh/Jameshenry/quotable-json/quotes.json");
+          if (!res.ok) throw new Error("quotes fetch failed");
+          const d = await res.json();
           if (Array.isArray(d)) this.quotes = d;
-          else if (d.results) this.quotes = d.results;
-        } catch (e) {
-          // use SEED silently
-        }
+          else if (d.results)   this.quotes = d.results;
+        } catch (e) { /* silently stay on SEED */ }
       },
 
       async _fetchAnimals() {
         try {
-          const r = await fetch("https://cdn.jsdelivr.net/gh/dariusk/corpora/data/animals/common.json");
-          if (!r.ok) throw new Error("animals fetch failed");
-          const d = await r.json();
+          const res = await fetch("https://cdn.jsdelivr.net/gh/dariusk/corpora/data/animals/common.json");
+          if (!res.ok) throw new Error("animals fetch failed");
+          const d = await res.json();
           if (d.animals) this.animals = d.animals;
-        } catch (e) {
-          // use SEED silently
-        }
+        } catch (e) { /* silently stay on SEED */ }
       },
 
       /* Sentiment scoring via AFINN */
       scoreSentiment(text) {
-        const words = text.toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/);
+        const tokens = text.toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/);
         let score = 0;
-        for (const word of words) {
+        for (const word of tokens) {
           if (this.afinn[word] !== undefined) score += this.afinn[word];
         }
         return score;
       },
 
-      /* Random pick helpers */
-      pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; },
-      pickFiller() { return this.pick(this.words.fillers); },
-      pickSwop() { return this.pick(this.words.swops); },
-      pickState() { return this.pick(this.words.states); },
-      pickVictory() { return this.pick(this.words.victory); },
+      /* Named pick helpers — read directly from this.words so cloud updates apply instantly */
+      pickFiller()  { return this.pick(this.words.fillers); },
+      pickSwop()    { return this.pick(this.words.swops); },
+      pickState()   { return this.pick(this.words.states); },
+      pickVictory() { return this.pick(this.words.victory_words || this.words.victory); },
       pickEmpathy() { return this.pick(this.words.empathy); },
-      pickQuote() { return this.pick(this.quotes); },
-      pickAnimal() { return this.pick(this.animals); }
+      pickQuote()   { return this.pick(this.quotes); },
+      pickAnimal()  { return this.pick(this.animals); },
+      pickPersonalState() { return this.pick(this.words.personal_states || this.words.states); }
     };
 
     /* ============================================================
@@ -600,41 +507,51 @@
 
     /* ============================================================
        CORE RESPONSE CONSTRUCTOR
+       Reads live FederatedBrain.words — cloud data applies the
+       moment it resolves, no restart needed.
     ============================================================ */
     function constructDoaResponse(val) {
       const low = val.toLowerCase();
       const now = new Date();
-      const parts = [];
+      const b   = FederatedBrain.words;           // direct reference to live word bank
+      const f   = FederatedBrain.pickFiller();    // random filler from cloud or SEED
       let bubbleClass = "";
 
       /* --- VICTORY MODE --- */
-      if (/\bwon\b|\bgot an a\b|\bfinished\b/i.test(low)) {
-        const msg = FederatedBrain.pickVictory();
+      if (/\bwon\b|\bgot an a\b|\bfinished\b|\bamazing\b/i.test(low)) {
+        const msg = `${FederatedBrain.pickVictory()}! That's The Mission paying off. I'm feeling pretty ${FederatedBrain.pickPersonalState()} hearing that!`;
         return { text: sanitizeResponse(msg), bubbleClass: "bubble-victory" };
       }
 
-      /* --- SENTIMENT DETECTION --- */
+      /* --- SENTIMENT DETECTION via AFINN --- */
       const sentimentScore = FederatedBrain.scoreSentiment(val);
       if (sentimentScore < -2) {
         const empathy = FederatedBrain.pickEmpathy();
         return { text: sanitizeResponse(empathy), bubbleClass: "bubble-empathy" };
       }
 
+      /* --- SIMPLE EMPATHY KEYWORDS (backup when AFINN score misses) --- */
+      if (low.includes("bad") || low.includes("not okay") || low.includes("struggling")) {
+        return { text: sanitizeResponse(FederatedBrain.pickEmpathy()), bubbleClass: "bubble-empathy" };
+      }
+
+      const parts = [];
+
       /* --- STATUS / HOW ARE YOU --- */
       if (low.includes("how are you") || low.includes("status") || low.includes("doing")) {
-        parts.push(FederatedBrain.pickState());
+        parts.push(`I'm feeling pretty ${FederatedBrain.pickPersonalState()} ${f}.`);
       }
 
       /* --- INFO LOGGING --- */
       const notes = [];
-      if (low.includes("work")) { UserProfile.activity = "work"; notes.push("you're Handling The Mission at work"); }
+      if (low.includes("work"))                          { UserProfile.activity = "work";   notes.push("you're Handling The Mission at work"); }
       if (low.includes("school") || low.includes("class")) { UserProfile.activity = "school"; notes.push("you're Handling The Mission at school"); }
-      if (low.includes("home")) { UserProfile.activity = "home"; notes.push("you're back home"); }
+      if (low.includes("home"))                          { UserProfile.activity = "home";   notes.push("you're back home"); }
       if (low.includes(" in ")) {
-        const words = val.split(" ");
-        const idx = words.findIndex(x => x.toLowerCase() === "in");
-        if (words[idx + 1]) {
-          UserProfile.location = words[idx + 1].replace(/[?!.]/g, "");
+        const tokens = val.split(" ");
+        const idx = tokens.findIndex(x => x.toLowerCase() === "in");
+        if (tokens[idx + 1]) {
+          UserProfile.location = tokens[idx + 1].replace(/[?!.]/g, "");
           notes.push(`you're in ${UserProfile.location}`);
         }
       }
@@ -643,14 +560,28 @@
         saveProfile();
       }
 
-      /* --- HANDLING RULE --- */
+      /* --- HANDLING RULE — work/school/mission subjects --- */
       if (low.includes("project") || low.includes("mission") || low.includes("assignment") || low.includes("task")) {
         const subjects = ["the project", "The Mission", "the assignment", "that task"];
-        const subject = subjects.find(s => low.includes(s.toLowerCase())) || "The Mission";
+        const subject  = subjects.find(s => low.includes(s.toLowerCase())) || "The Mission";
         parts.push(buildHandlingQuestion(subject));
       }
 
-      /* --- TRAVEL / BIRTHDAY / QUOTES --- */
+      /* --- QUOTE / INSPIRE --- */
+      else if (low.includes("quote") || low.includes("inspire") || low.includes("motivation")) {
+        const q = FederatedBrain.pickQuote();
+        if (q && q.content) {
+          parts.push(`${f} here's something that hits: "${q.content}" — ${q.author || "Unknown"}`);
+        }
+      }
+
+      /* --- SPIRIT ANIMAL / VIBE --- */
+      else if (low.includes("animal") || low.includes("spirit") || low.includes("vibe")) {
+        const animal = FederatedBrain.pickAnimal();
+        parts.push(`${f} your energy right now is giving ${animal}. That's The Rhythm speaking.`);
+      }
+
+      /* --- TRAVEL / STAY --- */
       else if (low.includes("leaving") || low.includes("stay") || low.includes("visiting") || low.includes("trip")) {
         const travelQs = [
           "When are you leaving, or is the stay just beginning?",
@@ -659,44 +590,40 @@
         ];
         parts.push(travelQs[Math.floor(Math.random() * travelQs.length)]);
       }
+
+      /* --- BIRTHDAY --- */
       else if (low.includes("birthday") || low.includes("bday") || low.includes("born")) {
         parts.push("That is a significant date. Would you like me to add your birthday to the calendar?");
       }
-      else if (low.includes("quote") || low.includes("inspire") || low.includes("motivation")) {
-        const q = FederatedBrain.pickQuote();
-        if (q && q.content) {
-          parts.push(`${FederatedBrain.pickFiller()} here's something that hits: "${q.content}" — ${q.author || "Unknown"}`);
-        }
-      }
-      else if (low.includes("animal") || low.includes("spirit") || low.includes("vibe")) {
-        const animal = FederatedBrain.pickAnimal();
-        parts.push(`${FederatedBrain.pickFiller()} your energy right now is giving ${animal}. That's The Rhythm speaking.`);
-      }
 
-      /* --- TIME-AWARE DEFAULT --- */
+      /* --- TIME-AWARE DEFAULT — always ends with "How is the mission unfolding?" style --- */
       else {
-        const day = now.toLocaleString('en-US', { weekday: 'long' });
+        const day   = now.toLocaleString('en-US', { weekday: 'long' });
         const month = now.toLocaleString('en-US', { month: 'long' });
-        const date = now.getDate();
-        const ords = ["th","st","nd","rd"];
-        const dStr = date + (ords[(date % 100 - 20) % 10] || ords[date % 100] || ords[0]);
-        const subjects = [day, month, dStr, "week", "weekend", "day", "today"];
-        let sub = subjects[Math.floor(Math.random() * subjects.length)];
-        let article = ["week","weekend","day","month"].includes(sub) ? (Math.random() > 0.5 ? "the " : "your ") : (Math.random() > 0.5 ? "your " : "");
+        const date  = now.getDate();
+        const ords  = ["th","st","nd","rd"];
+        const dStr  = date + (ords[(date % 100 - 20) % 10] || ords[date % 100] || ords[0]);
+
+        const subjects = [day, month, dStr, "week", "weekend", "today"];
+        let sub     = subjects[Math.floor(Math.random() * subjects.length)];
+        let article = ["week","weekend","month"].includes(sub) ? (Math.random() > 0.5 ? "the " : "your ") : (Math.random() > 0.5 ? "your " : "");
         if (sub === "today") article = "";
+
         let style = Math.floor(Math.random() * 4) + 1;
-        if ((style === 2 || style === 4) && (sub === "day" || sub === "today")) sub = day;
+        if ((style === 2 || style === 4) && sub === "today") sub = day;
+
         const pre = Math.random() > 0.5 ? "How is" : "How's";
         let q = "";
         if (style === 1) q = `${pre} ${article}${sub}?`;
         if (style === 2) q = `${pre} ${article}${sub} going?`;
         if (style === 3) q = `${pre} ${article}${sub} starting off?`;
         if (style === 4) q = `${pre} ${article}${sub} so far?`;
+
         if (Math.random() > 0.7 && UserProfile.name !== "Friend") q = q.replace("?", "") + `, ${UserProfile.name}?`;
 
-        // Random filler prefix
-        if (Math.random() > 0.5) q = `${FederatedBrain.pickFiller()} ${q.charAt(0).toLowerCase()}${q.slice(1)}`;
-        parts.push(q);
+        // Attach state + filler from FederatedBrain.words
+        const statePhrase = `I'm feeling pretty ${FederatedBrain.pickPersonalState()} ${f}.`;
+        parts.push(`${statePhrase} ${q} How is The Mission unfolding right now?`);
       }
 
       return { text: sanitizeResponse(parts.join(" ")), bubbleClass };
