@@ -1,92 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- [Keep your existing head/style exactly as is, I am providing the Script Integration] -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Doa | AI Operating System</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    /* Minimal styles for speed - add your full CSS back once this works */
-    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; display: flex; }
-    #main-sidebar { width: 260px; border-right: 1px solid #eee; display: flex; flex-direction: column; }
-    main { flex: 1; display: flex; flex-direction: column; padding: 20px; }
-    #chat-history { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-    .row-user { align-self: flex-end; background: #000; color: #fff; padding: 10px 15px; border-radius: 15px; }
-    .row-doa { align-self: flex-start; background: #f3f4f6; padding: 10px 15px; border-radius: 15px; }
-  </style>
+  <!-- ... (Keep your existing CSS/Style tags here to maintain your layout) ... -->
 </head>
-<body>
-  <aside id="main-sidebar">
-    <h1 style="padding: 20px;">DOA CALI</h1>
-    <button onclick="startNewChat()">+ New Chat</button>
-  </aside>
-  <main>
-    <div id="chat-history"></div>
-    <div style="margin-top: auto;">
-        <input type="text" id="user-input" placeholder="Ask Doa anything..." style="width: 100%; padding: 15px; border: 1px solid #ccc;">
-        <button onclick="handleMessage()">Send</button>
-    </div>
-  </main>
+<body class="mode-empty">
+  <!-- ... (Keep your existing HTML Sidebar/Main structure) ... -->
 
   <script>
-    // 1. COMPACT BRAIN (Prevents Browser Crashes)
+    /* --- 1. THE BRAIN SEED (Local Backup) --- */
     let DoaBrain = {
         fillers: ["honestly", "overall", "really"],
-        intensity: ["Gently", "Astronomically", "Pretty"],
-        personal_states: ["steady", "balanced", "vibrant", "refreshed"],
+        intensity: ["Gently", "Truly", "Astronomically"],
+        personal_states: ["steady", "balanced", "thriving"],
         modules: {
-            mindset: { adjectives: ["clear", "aligned"], verbs: ["finding"], nouns: ["headspace"] },
-            empathy: { reactions: ["I'm so sorry."], check_ins: ["Are you okay?"] }
+            empathy: { reactions: ["That is honestly awful."], check_ins: ["Are you holding up okay?"] },
+            finance: { nouns: ["the bag", "the empire"], verbs: ["scaling", "securing"] }
         }
     };
 
-    // 2. FETCH CLOUD DATA (The real brain)
+    /* --- 2. POLLINATION ENGINE (Cloud Sync) --- */
     async function pollinate() {
         try {
             const res = await fetch("https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json");
             if (res.ok) {
                 const fresh = await res.json();
-                DoaBrain = fresh; // Overwrite local with cloud
+                DoaBrain = fresh; // Bloom!
+                console.log("Brain Synchronized.");
             }
-        } catch (e) { console.log("Using seed brain."); }
+        } catch (e) { console.log("Using Seed Memory."); }
     }
 
-    // 3. LOGIC
-    function pick(arr) { return arr ? arr[Math.floor(Math.random() * arr.length)] : ""; }
-
+    /* --- 3. CONSTRUCT RESPONSE (The Intelligent Logic) --- */
     function constructDoaResponse(val) {
         const low = val.toLowerCase();
-        const f = pick(DoaBrain.fillers);
+        const b = DoaBrain;
+        const f = pick(b.fillers);
         
-        if (low.includes("bad") || low.includes("not okay")) {
-            return pick(DoaBrain.modules.empathy.reactions) + " " + pick(DoaBrain.modules.empathy.check_ins);
-        }
+        // Victory Logic
+        if (low.includes("got an a") || low.includes("won")) return "Brilliant! I'm feeling pretty vibrant hearing that!";
         
-        return `I'm feeling pretty ${pick(DoaBrain.personal_states)} ${f}. How is the mission unfolding today?`;
+        // Empathy Logic
+        if (low.includes("bad") || low.includes("not okay")) return pick(b.modules.empathy.reactions) + " " + pick(b.modules.empathy.check_ins);
+        
+        // Default Logic
+        return `I'm feeling pretty ${pick(b.personal_states)} ${f}. How is the mission unfolding today?`;
     }
 
-    // 4. CHAT HANDLER
-    function handleMessage() {
-        const input = document.getElementById('user-input');
-        const val = input.value.trim();
-        if(!val) return;
-        
-        const row = document.createElement('div');
-        row.className = 'row-user';
-        row.innerText = val;
-        document.getElementById('chat-history').appendChild(row);
-        input.value = "";
+    function pick(arr) { return arr ? arr[Math.floor(Math.random() * arr.length)] : ""; }
 
-        setTimeout(() => {
-            const res = constructDoaResponse(val);
-            const r2 = document.createElement('div');
-            r2.className = 'row-doa';
-            r2.innerText = res;
-            document.getElementById('chat-history').appendChild(r2);
-        }, 500);
+    /* --- 4. INTEGRATED HANDLER --- */
+    async function handleMessage() {
+      const input = document.getElementById('user-input'), val = input.value.trim();
+      if (!val) return;
+      document.body.className = 'mode-chatting';
+      addMessage('user', val);
+      input.value = '';
+
+      setTimeout(() => {
+        const res = constructDoaResponse(val);
+        addMessage('doa', res);
+        speak(res);
+      }, 450);
     }
 
-    window.onload = pollinate;
+    // ... (Keep your addMessage, speak, switchView, initGhostBuster functions) ...
+
+    window.onload = () => { 
+        pollinate(); 
+        // ... (rest of your original onload) ...
+    };
   </script>
 </body>
 </html>
