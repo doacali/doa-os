@@ -506,12 +506,45 @@
        Reads live FederatedBrain.words — cloud data applies the
        moment it resolves, no restart needed.
     ============================================================ */
-    function constructDoaResponse(val) {
-      const low = val.toLowerCase();
-      const now = new Date();
-      const b   = FederatedBrain.words;           // direct reference to live word bank
-      const f   = FederatedBrain.pickFiller();    // random filler from cloud or SEED
-      let bubbleClass = "";
+   /* --- 1. UPDATED LOGIC ENGINE --- */
+function constructDoaResponse(val) {
+    const low = val.toLowerCase();
+    const b = FederatedBrain; // This now has all your data!
+
+    // Victory Logic
+    if (/\bwon\b|\bgot an a\b|\bfinished\b/i.test(low)) {
+        return `${b.pickVictory()}! ${b.words.victory_words[0]} work. I'm feeling pretty vibrant hearing that!`;
+    }
+
+    // Empathy Logic
+    if (low.includes("bad") || low.includes("not okay") || low.includes("lost")) {
+        return b.pickEmpathy();
+    }
+
+    // Default Logic
+    const filler = b.pickFiller();
+    const state = b.pickPersonalState();
+    return `I'm feeling pretty ${state} ${filler}. How is the mission unfolding today?`;
+}
+
+/* --- 2. UPDATED CHAT HANDLER --- */
+async function handleMessage() {
+    const input = document.getElementById('user-input');
+    const val = input.value.trim();
+    if (!val) return;
+    
+    // Add user bubble
+    addMessage('user', val);
+    input.value = "";
+
+    // Use the brain to construct the response
+    const res = constructDoaResponse(val);
+    
+    setTimeout(() => {
+        addMessage('doa', res);
+        speak(res);
+    }, 450);
+}
 
       /* --- VICTORY MODE --- */
       if (/\bwon\b|\bgot an a\b|\bfinished\b|\bamazing\b/i.test(low)) {
