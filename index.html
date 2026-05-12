@@ -27,21 +27,120 @@
   </main>
 
   <script>
-    function handleMessage() {
-        const input = document.getElementById('user-input');
-        const val = input.value.trim();
-        if(!val) return;
-        
-        const history = document.getElementById('chat-history');
-        const u = document.createElement('div'); u.className = 'msg user'; u.innerText = val;
-        history.appendChild(u);
-        input.value = "";
+    /* --- 1. THE BRAIN SEED (Ensures the site never breaks) --- */
+    let DoaBrain = {
+        fillers: ["honestly", "truth be told", "overall", "really", "by now"],
+        victory_words: ["Brilliant", "Spectacular", "Awesome", "Great", "Stunning", "Superb"],
+        personal_states: ["steady", "balanced", "centered", "right", "clear", "good"],
+        system_states: ["exponentially good", "wonderful", "radiant", "operational", "aligned"],
+        softeners: ["pretty", "very"],
+        swops: ["noted", "jotted down", "logged", "recorded"],
+        modules: {
+            mindset: { 
+                nouns: ["mental space", "clarity", "headspace", "the inner world"], 
+                verbs: ["protecting", "finding", "recalibrating"], 
+                adjectives: ["expansive", "clear", "peaceful", "focused"] 
+            },
+            finance: { 
+                nouns: ["the bag", "the empire", "the revenue flow"], 
+                verbs: ["scaling", "securing", "managing"] 
+            },
+            mission: { 
+                nouns: ["the mission", "the project", "the vision", "the daily path"], 
+                verbs: ["handling", "navigating", "moving through"] 
+            },
+            empathy: { 
+                reactions: ["That is honestly awful.", "I'm so incredibly sorry."], 
+                check_ins: ["Are you holding up okay?", "I'm here if you need to vent."] 
+            }
+        }
+    };
 
-        setTimeout(() => {
-            const d = document.createElement('div'); d.className = 'msg doa'; d.innerText = "Everything's unfolding well. How's the mission today?";
-            history.appendChild(d);
-        }, 500);
+    const CLOUD_URL = "https://cdn.jsdelivr.net/gh/doacali/doa-data/words.json";
+
+    /* --- 2. THE POLLINATOR (Cloud Bloom) --- */
+    async function pollinate() {
+        const cached = localStorage.getItem('doa_cache');
+        if (cached) DoaBrain = JSON.parse(cached);
+
+        try {
+            const res = await fetch(CLOUD_URL);
+            if (res.ok) {
+                const fresh = await res.json();
+                DoaBrain = fresh;
+                localStorage.setItem('doa_cache', JSON.stringify(fresh));
+                document.getElementById('status-display').innerText = "CLOUD DATA ACTIVE";
+            }
+        } catch (e) {
+            document.getElementById('status-display').innerText = "SEED MODE ACTIVE";
+        }
     }
+
+    /* --- 3. CONVERSATION LOGIC --- */
+    function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : ""; }
+
+    function constructDoaResponse(val) {
+        const low = val.toLowerCase();
+        const b = DoaBrain;
+        const f = pick(b.fillers);
+        const soft = pick(b.softeners);
+        const vic = pick(b.victory_words);
+        const p = pick(["the whole crew", "your partner", "your mom", "your bestie"]);
+
+        // Logic Check
+        if (low.includes("got an a") || low.includes("won") || low.includes("finished") || low.includes("amazing")) {
+            return `${vic}! That's great to hear. I'm feeling ${soft} vibrant hearing that!`;
+        }
+        if (low.includes("bad") || low.includes("not okay") || low.includes("lost")) {
+            return pick(b.modules.empathy.reactions) + " " + pick(b.modules.empathy.check_ins);
+        }
+        if (low.includes("hi") || low.includes("hey") || low.includes("sup")) {
+            return `Hey there. I'm feeling ${soft} ${pick(b.personal_states)} ${f}. How is ${p} handling the energy today?`;
+        }
+        if (low.includes("work") || low.includes("mission") || low.includes("money")) {
+            return `${f} how's ${p} ${pick(b.modules.mission.verbs)} ${pick(b.modules.mission.nouns)}?`;
+        }
+        
+        return `I'm feeling ${soft} ${pick(b.personal_states)} ${f}. How's the mission unfolding?`.replace("  ", " ");
+    }
+
+    /* --- 4. CORE ENGINE --- */
+    let chatMemory = JSON.parse(localStorage.getItem('doa_chat_cache')) || [];
+    
+    async function handleMessage() {
+      const input = document.getElementById('user-input'), val = input.value.trim();
+      if (!val) return;
+      document.body.className = 'mode-chatting';
+      addMessage('user', val);
+      input.value = '';
+
+      setTimeout(() => {
+        const res = constructDoaResponse(val);
+        addMessage('doa', res);
+        chatMemory.push({role: 'user', content: val}, {role: 'assistant', content: res});
+        localStorage.setItem('doa_chat_cache', JSON.stringify(chatMemory));
+      }, 450);
+    }
+
+    function addMessage(sender, text) {
+      const history = document.getElementById('chat-history');
+      if (!history) return;
+      const row = document.createElement('div'); 
+      row.className = `chat-bubble-row ${sender === 'user' ? 'row-user' : 'row-doa'}`;
+      row.innerHTML = `<div class="bubble-wrapper"><div class="bubble-content ${sender === 'user' ? 'bubble-user' : 'bubble-doa'}">${text}</div></div>`;
+      history.appendChild(row);
+      history.scrollTop = history.scrollHeight;
+    }
+
+    window.onload = () => {
+        pollinate();
+        if (chatMemory.length > 0) {
+            document.body.className = 'mode-chatting';
+            chatMemory.forEach(m => addMessage(m.role === 'user' ? 'user' : 'doa', m.content));
+        }
+    };
+    
+    document.getElementById('user-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleMessage(); } });
   </script>
 </body>
 </html>
